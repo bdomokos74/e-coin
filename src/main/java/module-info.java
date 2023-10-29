@@ -3,9 +3,9 @@ module com.company {
     requires javafx.fxml;
     requires java.sql;
 
-    opens com.company.Controller to javafx.fxml;
-    opens com.company.Model to javafx.base;
-    opens com.company.ServiceData to javafx.fxml;
+    opens com.company.controller to javafx.fxml;
+    opens com.company.model to javafx.base;
+    opens com.company.servicedata to javafx.fxml;
 
     exports com.company;
 }

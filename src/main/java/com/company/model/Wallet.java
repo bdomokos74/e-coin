@@ -1,4 +1,4 @@
-package com.company.Model;
+package com.company.model;
 
 import java.io.Serializable;
 import java.security.*;
