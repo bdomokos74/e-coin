@@ -16,6 +16,8 @@ import java.security.*;
 import java.sql.*;
 import java.time.LocalDateTime;
 
+import static com.company.util.FileHelper.getDbPath;
+
 public class ECoin extends Application {
 
     public static void main(String[] args) {
@@ -24,9 +26,11 @@ public class ECoin extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        int peerPort = Integer.parseInt(System.getenv("peer.port"));
+        int serverPort = Integer.parseInt(System.getenv("server.port"));
         new UI().start(primaryStage);
-        new PeerClient().start();
-        new PeerServer(6000).start();
+        new PeerClient(peerPort).start();
+        new PeerServer(serverPort).start();
         new MiningThread().start();
     }
 
@@ -36,7 +40,7 @@ public class ECoin extends Application {
             //This creates your wallet if there is none and gives you a KeyPair.
             //We will create it in separate db for better security and ease of portability.
             Connection walletConnection = DriverManager
-                    .getConnection("jdbc:sqlite:C:\\Users\\bdomo\\IdeaProjects\\e-coin\\db\\wallet.db");
+                    .getConnection(getDbPath("wallet.db"));
             Statement walletStatment = walletConnection.createStatement();
             walletStatment.executeUpdate("CREATE TABLE IF NOT EXISTS WALLET ( " +
                     " PRIVATE_KEY BLOB NOT NULL UNIQUE, " +
@@ -63,7 +67,7 @@ public class ECoin extends Application {
 
 //          This will create the db tables with columns for the Blockchain.
             Connection blockchainConnection = DriverManager
-                    .getConnection("jdbc:sqlite:C:\\Users\\bdomo\\IdeaProjects\\e-coin\\db\\blockchain.db");
+                    .getConnection(getDbPath("blockchain.db"));
             Statement blockchainStmt = blockchainConnection.createStatement();
             blockchainStmt.executeUpdate("CREATE TABLE IF NOT EXISTS BLOCKCHAIN ( " +
                     " ID INTEGER NOT NULL UNIQUE, " +

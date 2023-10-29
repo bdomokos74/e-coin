@@ -11,6 +11,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.*;
 
+import static com.company.util.FileHelper.getDbPath;
+
 public class WalletData {
 
     private Wallet wallet;
@@ -28,7 +30,7 @@ public class WalletData {
     //This will load your wallet from the database.
     public void loadWallet() throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
         Connection walletConnection = DriverManager.getConnection(
-                "jdbc:sqlite:C:\\Users\\bdomo\\IdeaProjects\\e-coin\\db\\wallet.db");
+                getDbPath("wallet.db"));
         Statement walletStatment = walletConnection.createStatement();
         ResultSet resultSet;
         resultSet = walletStatment.executeQuery(" SELECT * FROM WALLET ");
