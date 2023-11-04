@@ -9,6 +9,11 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class UI extends Application {
+    private final String name;
+
+    public UI(String name) {
+        this.name = name;
+    }
 
     @Override
     public void start(Stage stage) {
@@ -18,7 +23,7 @@ public class UI extends Application {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        stage.setTitle("E-Coin");
+        stage.setTitle("E-Coin - "+name);
         stage.setScene(new Scene(root, 900, 700));
         stage.show();
     }

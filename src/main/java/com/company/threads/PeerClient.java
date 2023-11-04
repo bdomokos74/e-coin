@@ -9,17 +9,16 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class PeerClient extends Thread {
 
-    private Queue<Integer> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<Integer> queue = new ConcurrentLinkedQueue<>();
 
-    public PeerClient(int peerClientPort) {
-        this.queue.add(peerClientPort);
-//        this.queue.add(6001);
-//        this.queue.add(6002);
+    public PeerClient(List<Integer> peerClientPorts) {
+        this.queue.addAll(peerClientPorts);
     }
 
     @Override

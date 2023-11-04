@@ -15,6 +15,8 @@ import javafx.stage.Stage;
 import java.security.*;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.company.util.FileHelper.getDbPath;
 
@@ -26,10 +28,10 @@ public class ECoin extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        int peerPort = Integer.parseInt(System.getenv("peer.port"));
+        List<Integer> peerPorts = Arrays.stream(System.getenv("peer.port").split(",")).map(Integer::parseInt).toList();
         int serverPort = Integer.parseInt(System.getenv("server.port"));
-        new UI().start(primaryStage);
-        new PeerClient(peerPort).start();
+        new UI(System.getenv("name")).start(primaryStage);
+        new PeerClient(peerPorts).start();
         new PeerServer(serverPort).start();
         new MiningThread().start();
     }
