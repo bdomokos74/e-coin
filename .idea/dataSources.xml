@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
     <data-source source="LOCAL" name="P1 - blockchain" uuid="afba14b6-ff2f-4621-a4eb-0f27bb5b7ae2">
-      <driver-ref>d0cbb4e4-fca7-4ba9-85e0-4e5f5a8dc042</driver-ref>
+      <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/run/p1/db/blockchain.db</jdbc-url>

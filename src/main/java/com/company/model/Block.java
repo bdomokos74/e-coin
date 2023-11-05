@@ -1,14 +1,13 @@
 package com.company.model;
 
-import sun.security.provider.DSAPublicKeyImpl;
-
 import java.io.Serializable;
-import java.security.InvalidKeyException;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+
+import static com.company.util.KeyHelper.getPublicKey;
 
 public class Block implements Serializable {
 
@@ -47,8 +46,10 @@ public class Block implements Serializable {
     }
 
     public Boolean isVerified(Signature signing)
-            throws InvalidKeyException, SignatureException {
-        signing.initVerify(new DSAPublicKeyImpl(this.minedBy));
+            throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
+
+        PublicKey publicKey= getPublicKey(this.minedBy);
+        signing.initVerify(publicKey);
         signing.update(this.toString().getBytes());
         return signing.verify(this.currHash);
     }
@@ -56,8 +57,7 @@ public class Block implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Block)) return false;
-        Block block = (Block) o;
+        if (!(o instanceof Block block)) return false;
         return Arrays.equals(getPrevHash(), block.getPrevHash());
     }
 

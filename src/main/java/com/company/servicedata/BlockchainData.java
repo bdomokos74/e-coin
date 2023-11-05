@@ -5,9 +5,11 @@ import com.company.model.Transaction;
 import com.company.model.Wallet;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import sun.security.provider.DSAPublicKeyImpl;
 
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -17,6 +19,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 import static com.company.util.FileHelper.getDbPath;
+import static com.company.util.KeyHelper.getPublicKey;
 
 public class BlockchainData {
 
@@ -29,7 +32,7 @@ public class BlockchainData {
     private static final int TIMEOUT_INTERVAL = 65;
     private static final int MINING_INTERVAL = 60;
     //helper class.
-    private Signature signing = Signature.getInstance("SHA256withDSA");
+    private Signature signing = Signature.getInstance("SHA256WITHDSA");
 
     //singleton class
     private static BlockchainData instance;
@@ -105,8 +108,9 @@ public class BlockchainData {
 
     public void addTransaction(Transaction transaction, boolean blockReward) throws GeneralSecurityException {
         try {
-            if (getBalance(currentBlockChain, newBlockTransactions,
-                    new DSAPublicKeyImpl(transaction.getFrom())) < transaction.getValue() && !blockReward) {
+            PublicKey pk = getPublicKey(transaction.getFrom());
+            Integer balance = getBalance(currentBlockChain, newBlockTransactions, pk);
+            if (balance < transaction.getValue() && !blockReward) {
                 throw new GeneralSecurityException("Not enough funds by sender to record transaction");
             } else {
                 Connection connection = DriverManager.getConnection
@@ -295,13 +299,12 @@ public class BlockchainData {
                     }
                 }
                 // if only the transaction ledgers are different then combine them.
-            } else if (!receivedBC.getLast().getTransactionLedger().equals(getCurrentBlockChain()
-                    .getLast().getTransactionLedger())) {
+            } else if (!receivedBC.getLast().getTransactionLedger().equals(getCurrentBlockChain().getLast().getTransactionLedger())) {
                 updateTransactionLedgers(receivedBC);
                 System.out.println("Transaction ledgers updated");
                 return receivedBC;
             } else {
-                System.out.println("blockchains are identical");
+//                System.out.println("blockchains are identical");
             }
         } catch (GeneralSecurityException e) {
             e.printStackTrace();

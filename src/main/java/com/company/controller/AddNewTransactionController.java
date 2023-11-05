@@ -21,10 +21,10 @@ public class AddNewTransactionController {
     public void createNewTransaction() throws GeneralSecurityException {
         Base64.Decoder decoder = Base64.getDecoder();
         Signature signing = Signature.getInstance("SHA256withDSA");
-        Integer ledgerId = BlockchainData.getInstance().getTransactionLedgerFX().get(0).getLedgerId();
         byte[] sendB = decoder.decode(toAddress.getText());
-        Transaction transaction = new Transaction(WalletData.getInstance()
-                .getWallet(),sendB ,Integer.parseInt(value.getText()), ledgerId, signing);
+
+        Integer ledgerId = BlockchainData.getInstance().getTransactionLedgerFX().get(0).getLedgerId();
+        Transaction transaction = new Transaction(WalletData.getInstance().getWallet(), sendB ,Integer.parseInt(value.getText()), ledgerId, signing);
         BlockchainData.getInstance().addTransaction(transaction,false);
         BlockchainData.getInstance().addTransactionState(transaction);
     }

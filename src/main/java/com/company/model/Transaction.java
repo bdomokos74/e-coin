@@ -1,14 +1,13 @@
 package com.company.model;
 
-import sun.security.provider.DSAPublicKeyImpl;
-
 import java.io.Serializable;
-import java.security.InvalidKeyException;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
+
+import static com.company.util.KeyHelper.getPublicKey;
 
 public class Transaction implements Serializable {
 
@@ -56,8 +55,10 @@ public class Transaction implements Serializable {
    }
 
    public Boolean isVerified(Signature signing)
-           throws InvalidKeyException, SignatureException {
-      signing.initVerify(new DSAPublicKeyImpl(this.getFrom()));
+           throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
+
+      PublicKey publicKey = getPublicKey(this.getFrom());
+      signing.initVerify(publicKey);
       signing.update(this.toString().getBytes());
       return signing.verify(this.signature);
    }
@@ -96,8 +97,7 @@ public class Transaction implements Serializable {
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof Transaction)) return false;
-      Transaction that = (Transaction) o;
+      if (!(o instanceof Transaction that)) return false;
       return Arrays.equals(getSignature(), that.getSignature());
    }
 
