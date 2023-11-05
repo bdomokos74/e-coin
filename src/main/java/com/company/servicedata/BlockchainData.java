@@ -3,8 +3,11 @@ package com.company.servicedata;
 import com.company.model.Block;
 import com.company.model.Transaction;
 import com.company.model.Wallet;
+import com.company.service.WalletService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
@@ -19,9 +22,20 @@ import java.util.Comparator;
 import java.util.LinkedList;
 
 import static com.company.util.FileHelper.getDbPath;
+import static com.company.util.KeyHelper.getPrivateKey;
 import static com.company.util.KeyHelper.getPublicKey;
 
+@Component
 public class BlockchainData {
+    private WalletService walletService;
+
+    @Autowired
+    public BlockchainData(WalletService walletService) throws NoSuchAlgorithmException {
+
+        this.walletService = walletService;
+        newBlockTransactions = FXCollections.observableArrayList();
+        newBlockTransactionsFX = FXCollections.observableArrayList();
+    }
 
     private ObservableList<Transaction> newBlockTransactionsFX;
     private ObservableList<Transaction> newBlockTransactions;
@@ -37,23 +51,6 @@ public class BlockchainData {
     //singleton class
     private static BlockchainData instance;
 
-    static {
-        try {
-            instance = new BlockchainData();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public BlockchainData() throws NoSuchAlgorithmException {
-        newBlockTransactions = FXCollections.observableArrayList();
-        newBlockTransactionsFX = FXCollections.observableArrayList();
-    }
-
-    public static BlockchainData getInstance() {
-        return instance;
-    }
-
     Comparator<Transaction> transactionComparator = Comparator.comparing(Transaction::getTimestamp);
     public ObservableList<Transaction> getTransactionLedgerFX() {
         newBlockTransactionsFX.clear();
@@ -63,8 +60,8 @@ public class BlockchainData {
     }
 
     public String getWalletBallanceFX() {
-        return getBalance(currentBlockChain, newBlockTransactions,
-                WalletData.getInstance().getWallet().getPublicKey()).toString();
+        Wallet wallet = walletService.loadWallet();
+        return getBalance(currentBlockChain, newBlockTransactions, getPublicKey(wallet)).toString();
     }
 
     private Integer getBalance(LinkedList<Block> blockChain,
@@ -158,9 +155,8 @@ public class BlockchainData {
             }
 
             latestBlock = currentBlockChain.getLast();
-            Transaction transaction = new Transaction(new Wallet(),
-                    WalletData.getInstance().getWallet().getPublicKey().getEncoded(),
-                    100, latestBlock.getLedgerId() + 1, signing);
+            Wallet wallet = walletService.getOrCreateWallet();
+            Transaction transaction = new Transaction(wallet, getPublicKey(wallet).getEncoded(), 100, latestBlock.getLedgerId() + 1, signing);
             newBlockTransactions.clear();
             newBlockTransactions.add(transaction);
             verifyBlockChain(currentBlockChain);
@@ -205,7 +201,7 @@ public class BlockchainData {
 
     public void mineBlock() {
         try {
-            finalizeBlock(WalletData.getInstance().getWallet());
+            finalizeBlock(walletService.loadWallet());
             addBlock(latestBlock);
         } catch (SQLException | GeneralSecurityException e) {
             System.out.println("Problem with DB: " + e.getMessage());
@@ -214,12 +210,12 @@ public class BlockchainData {
     }
 
     private void finalizeBlock(Wallet minersWallet) throws GeneralSecurityException, SQLException {
-        latestBlock = new Block(BlockchainData.getInstance().currentBlockChain);
+        latestBlock = new Block(currentBlockChain);
         latestBlock.setTransactionLedger(new ArrayList<>(newBlockTransactions));
         latestBlock.setTimeStamp(LocalDateTime.now().toString());
-        latestBlock.setMinedBy(minersWallet.getPublicKey().getEncoded());
+        latestBlock.setMinedBy(getPublicKey(minersWallet).getEncoded());
         latestBlock.setMiningPoints(miningPoints);
-        signing.initSign(minersWallet.getPrivateKey());
+        signing.initSign(getPrivateKey(minersWallet));
         signing.update(latestBlock.toString().getBytes());
         latestBlock.setCurrHash(signing.sign());
         currentBlockChain.add(latestBlock);
@@ -227,8 +223,7 @@ public class BlockchainData {
         //Reward transaction
         latestBlock.getTransactionLedger().sort(transactionComparator);
         addTransaction(latestBlock.getTransactionLedger().get(0), true);
-        Transaction transaction = new Transaction(new Wallet(), minersWallet.getPublicKey().getEncoded(),
-                100, latestBlock.getLedgerId() + 1, signing);
+        Transaction transaction = new Transaction(new Wallet(), getPublicKey(minersWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1, signing);
         newBlockTransactions.clear();
         newBlockTransactions.add(transaction);
     }
@@ -399,8 +394,7 @@ public class BlockchainData {
                 }
                 receivedBC.getLast().getTransactionLedger().sort(transactionComparator);
                 //we are returning the mining points since our local block lost.
-                setMiningPoints(BlockchainData.getInstance().getMiningPoints() +
-                        getCurrentBlockChain().getLast().getMiningPoints());
+                setMiningPoints(getMiningPoints() + getCurrentBlockChain().getLast().getMiningPoints());
                 replaceBlockchainInDatabase(receivedBC);
                 setCurrentBlockChain(new LinkedList<>());
                 loadBlockChain();

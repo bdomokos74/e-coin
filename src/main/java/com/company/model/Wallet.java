@@ -1,28 +1,29 @@
 package com.company.model;
 
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JavaType;
+import org.hibernate.type.descriptor.java.ByteArrayJavaType;
+
 import java.io.Serializable;
 import java.security.*;
 
-public class Wallet implements Serializable {
+@Entity
+@Data
+@NoArgsConstructor
+public class Wallet {
+    @Id
+    private Long id;
 
-    private KeyPair keyPair;
+    private byte[] publicKey;
 
-    //Constructors for generating new KeyPair
-    public Wallet() throws NoSuchAlgorithmException {
-        this(2048, KeyPairGenerator.getInstance("DSA"));
-    }
-    public Wallet(Integer keySize, KeyPairGenerator keyPairGen) {
-       keyPairGen.initialize(keySize);
-       this.keyPair = keyPairGen.generateKeyPair();
-    }
+    private byte[] privateKey;
 
-    //Constructor for importing Keys only
-    public Wallet(PublicKey publicKey, PrivateKey privateKey) {
-        this.keyPair = new KeyPair(publicKey,privateKey);
+    public Wallet(byte[] publicKey, byte[] privateKey) {
+        this.publicKey = publicKey;
+        this.privateKey = privateKey;
     }
 
-    public KeyPair getKeyPair() { return keyPair; }
 
-    public PublicKey getPublicKey() { return keyPair.getPublic(); }
-    public PrivateKey getPrivateKey() { return keyPair.getPrivate(); }
 }

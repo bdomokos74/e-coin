@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
     <data-source source="LOCAL" name="P1 - blockchain" uuid="afba14b6-ff2f-4621-a4eb-0f27bb5b7ae2">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>acaaa738-8e74-4e1a-ba7a-ce5357e85a31</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/run/p1/db/blockchain.db</jdbc-url>
@@ -90,6 +90,16 @@
           <url>file://$MAVEN_REPOSITORY$/org/xerial/sqlite-jdbc/3.42.0.0/sqlite-jdbc-3.42.0.0.jar</url>
         </library>
       </libraries>
+    </data-source>
+    <data-source source="LOCAL" name="P1 H2" uuid="f252031c-c8d9-4daa-bfbf-2fd7327fbb66">
+      <driver-ref>h2.unified</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.h2.Driver</jdbc-driver>
+      <jdbc-url>jdbc:h2:$PROJECT_DIR$/run/p1/h2</jdbc-url>
+      <jdbc-additional-properties>
+        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+      </jdbc-additional-properties>
+      <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
 </project>

@@ -14,9 +14,11 @@ import java.util.LinkedList;
 public class PeerRequestThread extends Thread {
 
     private Socket socket;
+    private final BlockchainData blockchainData;
 
-    public PeerRequestThread(Socket socket) {
+    public PeerRequestThread(Socket socket, BlockchainData blockchainData) {
         this.socket = socket;
+        this.blockchainData = blockchainData;
     }
 
     @Override
@@ -29,7 +31,7 @@ public class PeerRequestThread extends Thread {
             LinkedList<Block> recievedBC = (LinkedList<Block>) objectInput.readObject();
             System.out.println("LedgerId = " + recievedBC.getLast().getLedgerId()  +
                     " Size= " + recievedBC.getLast().getTransactionLedger().size());
-           objectOutput.writeObject(BlockchainData.getInstance().getBlockchainConsensus(recievedBC));
+           objectOutput.writeObject(blockchainData.getBlockchainConsensus(recievedBC));
         } catch (IOException | ClassNotFoundException ex) {
             ex.printStackTrace();
         }

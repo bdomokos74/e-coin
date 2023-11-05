@@ -16,8 +16,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class PeerClient extends Thread {
 
     private final Queue<Integer> queue = new ConcurrentLinkedQueue<>();
+    private final BlockchainData blockchainData;
 
-    public PeerClient(List<Integer> peerClientPorts) {
+    public PeerClient(List<Integer> peerClientPorts, BlockchainData blockchainData) {
+        this.blockchainData = blockchainData;
         this.queue.addAll(peerClientPorts);
     }
 
@@ -32,12 +34,12 @@ public class PeerClient extends Thread {
                 ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
 
-                LinkedList<Block> blockChain = BlockchainData.getInstance().getCurrentBlockChain();
+                LinkedList<Block> blockChain = blockchainData.getCurrentBlockChain();
                 objectOutput.writeObject(blockChain);
 
                 LinkedList<Block> returnedBlockchain = (LinkedList<Block>) objectInput.readObject();
                 System.out.println(" RETURNED BC LedgerId = " + returnedBlockchain.getLast().getLedgerId()  + " Size= " + returnedBlockchain.getLast().getTransactionLedger().size());
-                BlockchainData.getInstance().getBlockchainConsensus(returnedBlockchain);
+                blockchainData.getBlockchainConsensus(returnedBlockchain);
                 Thread.sleep(2000);
 
             } catch (SocketTimeoutException e) {

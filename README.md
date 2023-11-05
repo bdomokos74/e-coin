@@ -13,12 +13,13 @@ For More info check out [Chapter 7 of Introducing Blockchain with Java: Program,
 
 ### Notes to run
 
-- Add to Intellij Run Config / VM arguments:
-`--add-exports java.base/sun.security.provider=com.company --add-opens java.base/sun.security.provider=com.company` 
-- IntelliJ also added Settings / Compiler options / Override compiler options per module: (automatically when fixing issue: module java/base does not export sun.security.provider)
-`--add-exports java.base/sun.security.provider=ALL-UNNAMED,com.company`
 - To run different instances: copy db dir to a separate run folder (e.g. run/p1/db, run/p2/db ...) and copy the Intellij run config with the corresponding working dir (e.g. run/p1)
 - Set up ports, e.g. on p1:
 `peer.port=6000;server.port=6001`
 on p2:
 `peer.port=6001;server.port=6000`
+
+- https://blog.jetbrains.com/idea/2019/11/tutorial-reactive-spring-boot-a-javafx-spring-boot-application/
+- https://harunzafer.com/blog/javafx-spring-boot-04
+- 
+- https://intellij-support.jetbrains.com/hc/en-us/articles/360006298560

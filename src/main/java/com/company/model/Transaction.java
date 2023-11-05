@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
 
+import static com.company.util.KeyHelper.getPrivateKey;
 import static com.company.util.KeyHelper.getPublicKey;
 
 public class Transaction implements Serializable {
@@ -40,14 +41,14 @@ public class Transaction implements Serializable {
    public Transaction (Wallet fromWallet, byte[] toAddress, Integer value, Integer ledgerId,
                        Signature signing) throws InvalidKeyException, SignatureException {
       Base64.Encoder encoder = Base64.getEncoder();
-      this.from = fromWallet.getPublicKey().getEncoded();
-      this.fromFX = encoder.encodeToString(fromWallet.getPublicKey().getEncoded());
+      this.from = getPublicKey(fromWallet).getEncoded();
+      this.fromFX = encoder.encodeToString(getPublicKey(fromWallet).getEncoded());
       this.to = toAddress;
       this.toFX = encoder.encodeToString(toAddress);
       this.value = value;
       this.ledgerId = ledgerId;
       this.timestamp = LocalDateTime.now().toString();
-      signing.initSign(fromWallet.getPrivateKey());
+      signing.initSign(getPrivateKey(fromWallet));
       String sr = this.toString();
       signing.update(sr.getBytes());
       this.signature = signing.sign();

@@ -1,21 +1,30 @@
 package com.company.controller;
 
 import com.company.model.Transaction;
+import com.company.service.WalletService;
 import com.company.servicedata.BlockchainData;
-import com.company.servicedata.WalletData;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Optional;
 
-public class MainWindowController {
+import static com.company.util.KeyHelper.getPublicKey;
 
+@Controller
+public class MainWindowController {
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private BlockchainData blockchainData;
+    
     @FXML
     public TableView<Transaction> tableview = new TableView<>(); //this is read-only UI table
     @FXML
@@ -47,9 +56,9 @@ public class MainWindowController {
                 new PropertyValueFactory<>("signatureFX"));
         timestamp.setCellValueFactory(
                 new PropertyValueFactory<>("timestamp"));
-        eCoins.setText(BlockchainData.getInstance().getWalletBallanceFX());
-        publicKey.setText(encoder.encodeToString(WalletData.getInstance().getWallet().getPublicKey().getEncoded()));
-        tableview.setItems(BlockchainData.getInstance().getTransactionLedgerFX());
+        eCoins.setText(blockchainData.getWalletBallanceFX());
+        publicKey.setText(encoder.encodeToString(getPublicKey(walletService.loadWallet()).getEncoded()));
+        tableview.setItems(blockchainData.getTransactionLedgerFX());
         tableview.getSelectionModel().select(0);
     }
 
@@ -69,21 +78,21 @@ public class MainWindowController {
         newTransactionController.getDialogPane().getButtonTypes().add(ButtonType.FINISH);
         Optional<ButtonType> result = newTransactionController.showAndWait();
         if (result.isPresent() ) {
-            tableview.setItems(BlockchainData.getInstance().getTransactionLedgerFX());
-            eCoins.setText(BlockchainData.getInstance().getWalletBallanceFX());
+            tableview.setItems(blockchainData.getTransactionLedgerFX());
+            eCoins.setText(blockchainData.getWalletBallanceFX());
         }
     }
 
     @FXML
     public void refresh() {
-        tableview.setItems(BlockchainData.getInstance().getTransactionLedgerFX());
+        tableview.setItems(blockchainData.getTransactionLedgerFX());
         tableview.getSelectionModel().select(0);
-        eCoins.setText(BlockchainData.getInstance().getWalletBallanceFX());
+        eCoins.setText(blockchainData.getWalletBallanceFX());
     }
 
     @FXML
     public void handleExit() {
-        BlockchainData.getInstance().setExit(true);
+        blockchainData.setExit(true);
         Platform.exit();
     }
 }
