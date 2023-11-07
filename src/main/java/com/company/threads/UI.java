@@ -21,7 +21,7 @@ public class UI extends Application {
 
     @Override
     public void start(Stage stage) {
-        Parent root = null;
+        Parent root;
         try {
             URL resource = getClass().getResource("/View/MainWindow.fxml");
             FXMLLoader fxmlLoader = new FXMLLoader(resource);

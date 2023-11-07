@@ -1,7 +1,7 @@
 package com.company.threads;
 
 
-import com.company.servicedata.BlockchainData;
+import com.company.service.BlockchainService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -12,18 +12,18 @@ import java.net.ServerSocket;
 public class PeerServer extends Thread {
 
     private final ServerSocket serverSocket;
-    private final BlockchainData blockchainData;
+    private final BlockchainService blockchainService;
 
-    public PeerServer(Integer socketPort, BlockchainData blockchainData) throws IOException {
+    public PeerServer(Integer socketPort, BlockchainService blockchainService) throws IOException {
         this.serverSocket = new ServerSocket(socketPort);
-        this.blockchainData = blockchainData;
+        this.blockchainService = blockchainService;
     }
 
     @Override
     public void run() {
         while (true) {
             try {
-                new PeerRequestThread(serverSocket.accept(), blockchainData).start();
+                new PeerRequestThread(serverSocket.accept(), blockchainService).start();
             } catch (IOException e) {
                 log.info("{}", e.getMessage(), e);
             }

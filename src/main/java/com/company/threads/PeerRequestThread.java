@@ -2,7 +2,7 @@ package com.company.threads;
 
 
 import com.company.model.Block;
-import com.company.servicedata.BlockchainData;
+import com.company.service.BlockchainService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -15,11 +15,11 @@ import java.util.LinkedList;
 public class PeerRequestThread extends Thread {
 
     private final Socket socket;
-    private final BlockchainData blockchainData;
+    private final BlockchainService blockchainService;
 
-    public PeerRequestThread(Socket socket, BlockchainData blockchainData) {
+    public PeerRequestThread(Socket socket, BlockchainService blockchainService) {
         this.socket = socket;
-        this.blockchainData = blockchainData;
+        this.blockchainService = blockchainService;
     }
 
     @Override
@@ -32,7 +32,7 @@ public class PeerRequestThread extends Thread {
             LinkedList<Block> recievedBC = (LinkedList<Block>) objectInput.readObject();
             log.info("LedgerId = " + recievedBC.getLast().getLedgerId()  +
                     " Size= " + recievedBC.getLast().getTransactionLedger().size());
-           objectOutput.writeObject(blockchainData.getBlockchainConsensus(recievedBC));
+           objectOutput.writeObject(blockchainService.getBlockchainConsensus(recievedBC));
         } catch (IOException | ClassNotFoundException e) {
             log.info("{}", e.getMessage(), e);
         }

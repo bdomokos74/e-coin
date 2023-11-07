@@ -1,37 +1,59 @@
 package com.company.model;
 
+import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.UUID;
 
 import static com.company.util.KeyHelper.getPublicKey;
 
+@Entity(name = "BLOCKCHAIN")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Getter
+@Setter
 public class Block implements Serializable {
-
+    @Column(name = "PREVIOUS_HASH")
+    @EqualsAndHashCode.Include
     private byte[] prevHash;
+    @Column(name = "CURRENT_HASH")
     private byte[] currHash;
+    @Column(name = "CREATED_ON")
     private String timeStamp;
+    @Column(name = "CREATED_BY")
     private byte[] minedBy;
-    private Integer ledgerId = 1;
+
+    @Id
+    @GeneratedValue
+    @Column(name = "LEDGER_ID")
+    private Long ledgerId; // = 1;
+    @Column(name = "MINING_POINTS")
     private Integer miningPoints = 0;
+    @Column(name = "LUCK")
     private Double luck = 0.0;
 
-    private ArrayList<Transaction> transactionLedger = new ArrayList<>();
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @JoinColumn(name = "LEDGER_ID")
+    private ArrayList<Transaction> transactionLedger;
 
     //This constructor is used when we retrieve it from the db
-    public Block(byte[] prevHash, byte[] currHash, String timeStamp, byte[] minedBy,Integer ledgerId,
+    public Block(byte[] prevHash, byte[] currHash, String timeStamp, byte[] minedBy,Long ledgerId,
                  Integer miningPoints, Double luck, ArrayList<Transaction> transactionLedger) {
         this.prevHash = prevHash;
         this.currHash = currHash;
         this.timeStamp = timeStamp;
         this.minedBy = minedBy;
         this.ledgerId = ledgerId;
-        this.transactionLedger = transactionLedger;
         this.miningPoints = miningPoints;
         this.luck = luck;
+        this.transactionLedger = transactionLedger;
     }
     //This constructor is used when we initiate it after retrieve.
     public Block(LinkedList<Block> currentBlockChain) {
@@ -53,44 +75,6 @@ public class Block implements Serializable {
         signing.update(this.toString().getBytes());
         return signing.verify(this.currHash);
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Block block)) return false;
-        return Arrays.equals(getPrevHash(), block.getPrevHash());
-    }
-
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(getPrevHash());
-    }
-
-    public byte[] getPrevHash() { return prevHash; }
-    public byte[] getCurrHash() { return currHash; }
-
-    public void setPrevHash(byte[] prevHash) { this.prevHash = prevHash; }
-    public void setCurrHash(byte[] currHash) { this.currHash = currHash; }
-
-    public ArrayList<Transaction> getTransactionLedger() { return transactionLedger; }
-    public void setTransactionLedger(ArrayList<Transaction> transactionLedger) {
-        this.transactionLedger = transactionLedger;
-    }
-
-    public String getTimeStamp() { return timeStamp; }
-    public void setMinedBy(byte[] minedBy) { this.minedBy = minedBy; }
-
-    public void setTimeStamp(String timeStamp) { this.timeStamp = timeStamp; }
-
-    public byte[] getMinedBy() { return minedBy; }
-
-    public Integer getMiningPoints() { return miningPoints; }
-    public void setMiningPoints(Integer miningPoints) { this.miningPoints = miningPoints; }
-    public Double getLuck() { return luck; }
-    public void setLuck(Double luck) { this.luck = luck; }
-
-    public Integer getLedgerId() { return ledgerId; }
-    public void setLedgerId(Integer ledgerId) { this.ledgerId = ledgerId; }
 
     @Override
     public String toString() {

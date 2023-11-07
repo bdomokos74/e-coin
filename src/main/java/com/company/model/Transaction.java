@@ -1,50 +1,81 @@
 package com.company.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import lombok.*;
+
 import java.io.Serializable;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.UUID;
 
 import static com.company.util.KeyHelper.getPrivateKey;
 import static com.company.util.KeyHelper.getPublicKey;
 
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Data
+@Entity(name = "TRANSACTIONS")
 public class Transaction implements Serializable {
+   @Id
+   @GeneratedValue
+   private UUID id;
 
+   @Column(name = "FROM_W")
    private byte[] from;
-   private final String fromFX;
+   @Column(name = "TO_W")
    private byte[] to;
-   private final String toFX;
+   @Column(name = "VALUE_V")
    private Integer value;
-   private final String timestamp;
-   private final byte[] signature;
-   private final String signatureFX;
-   private Integer ledgerId;
+   @Column(name = "CREATED_ON")
+   private String timestamp;
+   @Column(name = "SIGNATURE")
+   @EqualsAndHashCode.Include
+   private byte[] signature;
+   @Column(name = "LEDGER_ID")
+   private Long ledgerId;
 
+   public Transaction(byte[] from, byte[] to, Integer value, String timestamp, byte[] signature, Long ledgerId) {
+      this.from = from;
+      this.to = to;
+      this.value = value;
+      this.timestamp = timestamp;
+      this.signature = signature;
+      this.ledgerId = ledgerId;
+   }
 
    //Constructor for loading with existing signature
-   public Transaction(byte[] from, byte[] to, Integer value, byte[] signature, Integer ledgerId,
-                      String timeStamp) {
-      Base64.Encoder encoder = Base64.getEncoder();
+   /*
+   public Transaction(byte[] from, byte[] to, Integer value, byte[] signature, Integer ledgerId, String timeStamp) {
       this.from = from;
-      this.fromFX = encoder.encodeToString(from);
+//      this.fromFX = encoder.encodeToString(from);
       this.to = to;
-      this.toFX = encoder.encodeToString(to);
+//      this.toFX = encoder.encodeToString(to);
       this.value = value;
       this.signature = signature;
-      this.signatureFX = encoder.encodeToString(signature);
+//      this.signatureFX = encoder.encodeToString(signature);
       this.ledgerId = ledgerId;
       this.timestamp = timeStamp;
    }
+   */
+
+
    //Constructor for creating a new transaction and signing it.
-   public Transaction (Wallet fromWallet, byte[] toAddress, Integer value, Integer ledgerId,
+   /*
+   public Transaction (Wallet fromWallet,
+                       byte[] toAddress,
+                       Integer value,
+                       Integer ledgerId,
                        Signature signing) throws InvalidKeyException, SignatureException {
-      Base64.Encoder encoder = Base64.getEncoder();
       this.from = getPublicKey(fromWallet).getEncoded();
-      this.fromFX = encoder.encodeToString(getPublicKey(fromWallet).getEncoded());
+//      this.fromFX = encoder.encodeToString(getPublicKey(fromWallet).getEncoded());
       this.to = toAddress;
-      this.toFX = encoder.encodeToString(toAddress);
+//      this.toFX = encoder.encodeToString(toAddress);
       this.value = value;
       this.ledgerId = ledgerId;
       this.timestamp = LocalDateTime.now().toString();
@@ -52,8 +83,9 @@ public class Transaction implements Serializable {
       String sr = this.toString();
       signing.update(sr.getBytes());
       this.signature = signing.sign();
-      this.signatureFX = encoder.encodeToString(this.signature);
+//      this.signatureFX = encoder.encodeToString(this.signature);
    }
+*/
 
    public Boolean isVerified(Signature signing)
            throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
@@ -75,36 +107,17 @@ public class Transaction implements Serializable {
               '}';
    }
 
-   public byte[] getFrom() { return from; }
-   public void setFrom(byte[] from) { this.from = from; }
-
-   public byte[] getTo() { return to; }
-   public void setTo(byte[] to) { this.to = to; }
-
-   public Integer getValue() { return value; }
-   public void setValue(Integer value) { this.value = value; }
-   public byte[] getSignature() { return signature; }
-
-   public Integer getLedgerId() { return ledgerId; }
-   public void setLedgerId(Integer ledgerId) { this.ledgerId = ledgerId; }
-
-   public String getTimestamp() { return timestamp; }
-
-   public String getFromFX() { return fromFX; }
-   public String getToFX() { return toFX; }
-   public String getSignatureFX() { return signatureFX; }
-
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Transaction that)) return false;
-      return Arrays.equals(getSignature(), that.getSignature());
+   public String getFromFX() {
+      Base64.Encoder encoder = Base64.getEncoder();
+      return encoder.encodeToString(from);
    }
 
-   @Override
-   public int hashCode() {
-      return Arrays.hashCode(getSignature());
+   public String getToFX() {
+      Base64.Encoder encoder = Base64.getEncoder();
+      return encoder.encodeToString(to);
    }
-
+   public String getSignatureFX() {
+      Base64.Encoder encoder = Base64.getEncoder();
+      return encoder.encodeToString(this.signature) ;
+   }
 }

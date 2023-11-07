@@ -1,57 +1,45 @@
-package com.company.servicedata;
+package com.company.service;
 
 import com.company.model.Block;
 import com.company.model.Transaction;
 import com.company.model.Wallet;
-import com.company.service.WalletService;
+import com.company.repository.BlockChainRepository;
+import com.company.repository.TransactionRepository;
+import jakarta.transaction.Transactional;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.sql.*;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.*;
 
-import static com.company.util.FileHelper.getDbPath;
 import static com.company.util.KeyHelper.getPrivateKey;
 import static com.company.util.KeyHelper.getPublicKey;
 
 @Component
 @Slf4j
-public class BlockchainData {
+@RequiredArgsConstructor
+@Transactional
+public class BlockchainService {
     private final WalletService walletService;
+    private final TransactionRepository transactionRepository;
+    private final BlockChainRepository blockChainRepository;
 
-    @Autowired
-    public BlockchainData(WalletService walletService) throws NoSuchAlgorithmException {
-
-        this.walletService = walletService;
-        newBlockTransactions = FXCollections.observableArrayList();
-        newBlockTransactionsFX = FXCollections.observableArrayList();
-    }
-
-    private final ObservableList<Transaction> newBlockTransactionsFX;
-    private final ObservableList<Transaction> newBlockTransactions;
+    private final ObservableList<Transaction> newBlockTransactionsFX = FXCollections.observableArrayList();
+    private final ObservableList<Transaction> newBlockTransactions = FXCollections.observableArrayList();
     private LinkedList<Block> currentBlockChain = new LinkedList<>();
     private Block latestBlock;
     private boolean exit = false;
     private int miningPoints;
     private static final int TIMEOUT_INTERVAL = 65;
     private static final int MINING_INTERVAL = 60;
-    //helper class.
-    private final Signature signing = Signature.getInstance("SHA256WITHDSA");
-
-    //singleton class
-    private static BlockchainData instance;
 
     Comparator<Transaction> transactionComparator = Comparator.comparing(Transaction::getTimestamp);
     public ObservableList<Transaction> getTransactionLedgerFX() {
@@ -66,8 +54,35 @@ public class BlockchainData {
         return getBalance(currentBlockChain, newBlockTransactions, getPublicKey(wallet)).toString();
     }
 
-    private Integer getBalance(LinkedList<Block> blockChain,
-                               ObservableList<Transaction> currentLedger, PublicKey walletAddress) {
+    public void startBlockChain() {
+        try {
+            Wallet wallet = walletService.getOrCreateWallet();
+
+            List<Block> blockChainRecords = blockChainRepository.findAll();
+            if (blockChainRecords.isEmpty()) {
+                Block firstBlock = new Block();
+                firstBlock.setMinedBy(getPublicKey(wallet).getEncoded());
+                firstBlock.setTimeStamp(LocalDateTime.now().toString());
+//                firstBlock.setLedgerId(1L);
+                //helper class.
+                Signature signing = Signature.getInstance("SHA256withDSA");
+                signing.initSign(getPrivateKey(wallet));
+                signing.update(firstBlock.toString().getBytes());
+                firstBlock.setCurrHash(signing.sign());
+                log.info("block: {}", firstBlock);
+                blockChainRepository.save(firstBlock);
+                Transaction initBlockRewardTransaction = walletService.createTransaction( getPublicKey(wallet).getEncoded(), 100, 1L);
+                addTransaction(initBlockRewardTransaction, true);
+                addTransactionState(initBlockRewardTransaction);
+            }
+        } catch (GeneralSecurityException e) {
+            log.error("Failed to initialize", e);
+        }
+        loadBlockChain();
+    }
+
+
+    private Integer getBalance(LinkedList<Block> blockChain, ObservableList<Transaction> currentLedger, PublicKey walletAddress) {
         Integer balance = 0;
         for (Block block : blockChain) {
             for (Transaction transaction : block.getTransactionLedger()) {
@@ -88,6 +103,7 @@ public class BlockchainData {
     }
 
     private void verifyBlockChain(LinkedList<Block> currentBlockChain) throws GeneralSecurityException {
+        Signature signing = Signature.getInstance("SHA256withDSA");
         for (Block block : currentBlockChain) {
             if (!block.isVerified(signing)) {
                 throw new GeneralSecurityException("Block validation failed");
@@ -106,6 +122,14 @@ public class BlockchainData {
     }
 
     public void addTransaction(Transaction transaction, boolean blockReward) throws GeneralSecurityException {
+        PublicKey pk = getPublicKey(transaction.getFrom());
+        Integer balance = getBalance(currentBlockChain, newBlockTransactions, pk);
+        if (balance < transaction.getValue() && !blockReward) {
+            throw new GeneralSecurityException("Not enough funds by sender to record transaction");
+        } else {
+            transactionRepository.save(transaction);
+        }
+        /*
         try {
             PublicKey pk = getPublicKey(transaction.getFrom());
             Integer balance = getBalance(currentBlockChain, newBlockTransactions, pk);
@@ -134,69 +158,46 @@ public class BlockchainData {
             log.info("Problem with DB: {}", e.getMessage(), e);
         }
 
+         */
+
     }
 
     public void loadBlockChain() {
         try {
-            Connection connection = DriverManager.getConnection
-                    (getDbPath("blockchain.db"));
-            Statement stmt = connection.createStatement();
-            ResultSet resultSet = stmt.executeQuery(" SELECT * FROM BLOCKCHAIN ");
-            while (resultSet.next()) {
-                this.currentBlockChain.add(new Block(
-                        resultSet.getBytes("PREVIOUS_HASH"),
-                        resultSet.getBytes("CURRENT_HASH"),
-                        resultSet.getString("CREATED_ON"),
-                        resultSet.getBytes("CREATED_BY"),
-                        resultSet.getInt("LEDGER_ID"),
-                        resultSet.getInt("MINING_POINTS"),
-                        resultSet.getDouble("LUCK"),
-                        loadTransactionLedger(resultSet.getInt("LEDGER_ID"))
-                ));
-            }
+            currentBlockChain = new LinkedList<> (blockChainRepository.findAll());
+//            Connection connection = DriverManager.getConnection
+//                    (getDbPath("blockchain.db"));
+//            Statement stmt = connection.createStatement();
+//            ResultSet resultSet = stmt.executeQuery(" SELECT * FROM BLOCKCHAIN ");
+//            while (resultSet.next()) {
+//                this.currentBlockChain.add(new Block(
+//                        resultSet.getBytes("PREVIOUS_HASH"),
+//                        resultSet.getBytes("CURRENT_HASH"),
+//                        resultSet.getString("CREATED_ON"),
+//                        resultSet.getBytes("CREATED_BY"),
+//                        resultSet.getInt("LEDGER_ID"),
+//                        resultSet.getInt("MINING_POINTS"),
+//                        resultSet.getDouble("LUCK"),
+//                        loadTransactionLedger(resultSet.getInt("LEDGER_ID"))
+//                ));
+//            }
 
             latestBlock = currentBlockChain.getLast();
             Wallet wallet = walletService.getOrCreateWallet();
-            Transaction transaction = new Transaction(wallet, getPublicKey(wallet).getEncoded(), 100, latestBlock.getLedgerId() + 1, signing);
+            Transaction transaction = walletService.createTransaction(getPublicKey(wallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
             newBlockTransactions.clear();
             newBlockTransactions.add(transaction);
             verifyBlockChain(currentBlockChain);
-            resultSet.close();
-            stmt.close();
-            connection.close();
-        } catch (SQLException | NoSuchAlgorithmException e) {
-            log.info("Problem with DB: {}", e.getMessage(), e);
+//            resultSet.close();
+//            stmt.close();
+//            connection.close();
         } catch (GeneralSecurityException e) {
             log.info("{}", e.getMessage(), e);
         }
     }
 
-    private ArrayList<Transaction> loadTransactionLedger(Integer ledgerID) throws SQLException {
-        ArrayList<Transaction> transactions = new ArrayList<>();
-        try {
-            Connection connection = DriverManager.getConnection
-                    (getDbPath("blockchain.db"));
-            PreparedStatement stmt = connection.prepareStatement
-                    (" SELECT  * FROM TRANSACTIONS WHERE LEDGER_ID = ?");
-            stmt.setInt(1, ledgerID);
-            ResultSet resultSet = stmt.executeQuery();
-            while (resultSet.next()) {
-                transactions.add(new Transaction(
-                        resultSet.getBytes("FROM"),
-                        resultSet.getBytes("TO"),
-                        resultSet.getInt("VALUE"),
-                        resultSet.getBytes("SIGNATURE"),
-                        resultSet.getInt("LEDGER_ID"),
-                        resultSet.getString("CREATED_ON")
-                ));
-            }
-            resultSet.close();
-            stmt.close();
-            connection.close();
-        } catch (SQLException e) {
-            log.info("{}", e.getMessage(), e);
-        }
-        return transactions;
+    private List<Transaction> loadTransactionLedger(Long ledgerID) {
+        return transactionRepository.findByLedgerId(ledgerID);
     }
 
     public void mineBlock() {
@@ -209,6 +210,7 @@ public class BlockchainData {
     }
 
     private void finalizeBlock(Wallet minersWallet) throws GeneralSecurityException, SQLException {
+        Signature signing = Signature.getInstance("SHA256withDSA");
         latestBlock = new Block(currentBlockChain);
         latestBlock.setTransactionLedger(new ArrayList<>(newBlockTransactions));
         latestBlock.setTimeStamp(LocalDateTime.now().toString());
@@ -222,54 +224,66 @@ public class BlockchainData {
         //Reward transaction
         latestBlock.getTransactionLedger().sort(transactionComparator);
         addTransaction(latestBlock.getTransactionLedger().get(0), true);
-        Transaction transaction = new Transaction(new Wallet(), getPublicKey(minersWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1, signing);
+        Transaction transaction = walletService.createTransaction(getPublicKey(minersWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
         newBlockTransactions.clear();
         newBlockTransactions.add(transaction);
     }
 
-    private void addBlock(Block block) {
-        try {
-            Connection connection = DriverManager.getConnection
-                    (getDbPath("blockchain.db"));
-            PreparedStatement pstmt;
-            pstmt = connection.prepareStatement
-                    ("INSERT INTO BLOCKCHAIN(PREVIOUS_HASH, CURRENT_HASH, LEDGER_ID, CREATED_ON," +
-                            " CREATED_BY, MINING_POINTS, LUCK) VALUES (?,?,?,?,?,?,?) ");
-            pstmt.setBytes(1, block.getPrevHash());
-            pstmt.setBytes(2, block.getCurrHash());
-            pstmt.setInt(3, block.getLedgerId());
-            pstmt.setString(4, block.getTimeStamp());
-            pstmt.setBytes(5, block.getMinedBy());
-            pstmt.setInt(6, block.getMiningPoints());
-            pstmt.setDouble(7, block.getLuck());
-            pstmt.executeUpdate();
-            pstmt.close();
-            connection.close();
-        } catch (SQLException e) {
-            log.info("Problem with DB: {}", e.getMessage(), e);
-        }
+    public void addBlock(Block block) {
+        blockChainRepository.save(block);
+//
+//        try {
+//            Connection connection = DriverManager.getConnection
+//                    (getDbPath("blockchain.db"));
+//            PreparedStatement pstmt;
+//            pstmt = connection.prepareStatement
+//                    ("INSERT INTO BLOCKCHAIN(PREVIOUS_HASH, CURRENT_HASH, LEDGER_ID, CREATED_ON," +
+//                            " CREATED_BY, MINING_POINTS, LUCK) VALUES (?,?,?,?,?,?,?) ");
+//            pstmt.setBytes(1, block.getPrevHash());
+//            pstmt.setBytes(2, block.getCurrHash());
+//            pstmt.setInt(3, block.getLedgerId());
+//            pstmt.setString(4, block.getTimeStamp());
+//            pstmt.setBytes(5, block.getMinedBy());
+//            pstmt.setInt(6, block.getMiningPoints());
+//            pstmt.setDouble(7, block.getLuck());
+//            pstmt.executeUpdate();
+//            pstmt.close();
+//            connection.close();
+//        } catch (SQLException e) {
+//            log.info("Problem with DB: {}", e.getMessage(), e);
+//        }
     }
 
-    private void replaceBlockchainInDatabase(LinkedList<Block> receivedBC) {
-        try {
-            Connection connection = DriverManager.getConnection
-                    (getDbPath("blockchain.db"));
-            Statement clearDBStatement = connection.createStatement();
-            clearDBStatement.executeUpdate(" DELETE FROM BLOCKCHAIN ");
-            clearDBStatement.executeUpdate(" DELETE FROM TRANSACTIONS ");
-            clearDBStatement.close();
-            connection.close();
-            for (Block block : receivedBC) {
-                addBlock(block);
-                boolean rewardTransaction = true;
-                block.getTransactionLedger().sort(transactionComparator);
-                for (Transaction transaction : block.getTransactionLedger()) {
-                    addTransaction(transaction, rewardTransaction);
-                    rewardTransaction = false;
-                }
+    private void replaceBlockchainInDatabase(LinkedList<Block> receivedBC) throws GeneralSecurityException {
+        blockChainRepository.deleteAll();
+//        try {
+//            Connection connection = DriverManager.getConnection
+//                    (getDbPath("blockchain.db"));
+//            Statement clearDBStatement = connection.createStatement();
+//            clearDBStatement.executeUpdate(" DELETE FROM BLOCKCHAIN ");
+//            clearDBStatement.executeUpdate(" DELETE FROM TRANSACTIONS ");
+//            clearDBStatement.close();
+//            connection.close();
+//            for (Block block : receivedBC) {
+//                addBlock(block);
+//                boolean rewardTransaction = true;
+//                block.getTransactionLedger().sort(transactionComparator);
+//                for (Transaction transaction : block.getTransactionLedger()) {
+//                    addTransaction(transaction, rewardTransaction);
+//                    rewardTransaction = false;
+//                }
+//            }
+//        } catch (SQLException | GeneralSecurityException e) {
+//            log.info("Problem with DB: {}", e.getMessage(), e);
+//        }
+        for (Block block : receivedBC) {
+            addBlock(block);
+            boolean rewardTransaction = true;
+            block.getTransactionLedger().sort(transactionComparator);
+            for (Transaction transaction : block.getTransactionLedger()) {
+                addTransaction(transaction, rewardTransaction);
+                rewardTransaction = false;
             }
-        } catch (SQLException | GeneralSecurityException e) {
-            log.info("Problem with DB: {}", e.getMessage(), e);
         }
     }
 
@@ -321,7 +335,7 @@ public class BlockchainData {
         receivedBC.getLast().getTransactionLedger().sort(transactionComparator);
     }
 
-    private LinkedList<Block> checkIfOutdated(LinkedList<Block> receivedBC) {
+    private LinkedList<Block> checkIfOutdated(LinkedList<Block> receivedBC) throws GeneralSecurityException {
         //Check how old the blockchains are.
         long lastMinedLocalBlock = LocalDateTime.parse
                 (getCurrentBlockChain().getLast().getTimeStamp()).toEpochSecond(ZoneOffset.UTC);
@@ -349,7 +363,7 @@ public class BlockchainData {
         return null;
     }
 
-    private LinkedList<Block> checkWhichIsCreatedFirst(LinkedList<Block> receivedBC) {
+    private LinkedList<Block> checkWhichIsCreatedFirst(LinkedList<Block> receivedBC) throws GeneralSecurityException {
         //Compare timestamps to see which one is created first.
         long initRcvBlockTime = LocalDateTime.parse(receivedBC.getFirst().getTimeStamp())
                 .toEpochSecond(ZoneOffset.UTC);

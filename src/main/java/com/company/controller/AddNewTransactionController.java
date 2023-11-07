@@ -2,22 +2,20 @@ package com.company.controller;
 
 import com.company.model.Transaction;
 import com.company.service.WalletService;
-import com.company.servicedata.BlockchainData;
+import com.company.service.BlockchainService;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.GeneralSecurityException;
-import java.security.Signature;
 import java.util.Base64;
 
 @Component
+@RequiredArgsConstructor
 public class AddNewTransactionController {
-    @Autowired
-    private BlockchainData blockchainData;
-    @Autowired
-    WalletService walletService;
+    private final BlockchainService blockchainService;
+    private final WalletService walletService;
 
     @FXML
     private TextField toAddress;
@@ -27,12 +25,11 @@ public class AddNewTransactionController {
     @FXML
     public void createNewTransaction() throws GeneralSecurityException {
         Base64.Decoder decoder = Base64.getDecoder();
-        Signature signing = Signature.getInstance("SHA256withDSA");
         byte[] sendB = decoder.decode(toAddress.getText());
 
-        Integer ledgerId = blockchainData.getTransactionLedgerFX().get(0).getLedgerId();
-        Transaction transaction = new Transaction(walletService.loadWallet(), sendB ,Integer.parseInt(value.getText()), ledgerId, signing);
-        blockchainData.addTransaction(transaction,false);
-        blockchainData.addTransactionState(transaction);
+        Long ledgerId = blockchainService.getTransactionLedgerFX().get(0).getLedgerId();
+        Transaction transaction = walletService.createTransaction(sendB ,Integer.parseInt(value.getText()), ledgerId);
+        blockchainService.addTransaction(transaction,false);
+        blockchainService.addTransactionState(transaction);
     }
 }

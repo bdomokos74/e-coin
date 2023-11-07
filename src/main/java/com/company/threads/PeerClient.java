@@ -1,7 +1,7 @@
 package com.company.threads;
 
 import com.company.model.Block;
-import com.company.servicedata.BlockchainData;
+import com.company.service.BlockchainService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,10 +18,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class PeerClient extends Thread {
 
     private final Queue<Integer> queue = new ConcurrentLinkedQueue<>();
-    private final BlockchainData blockchainData;
+    private final BlockchainService blockchainService;
 
-    public PeerClient(List<Integer> peerClientPorts, BlockchainData blockchainData) {
-        this.blockchainData = blockchainData;
+    public PeerClient(List<Integer> peerClientPorts, BlockchainService blockchainService) {
+        this.blockchainService = blockchainService;
         this.queue.addAll(peerClientPorts);
     }
 
@@ -36,12 +36,12 @@ public class PeerClient extends Thread {
                 ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
 
-                LinkedList<Block> blockChain = blockchainData.getCurrentBlockChain();
+                LinkedList<Block> blockChain = blockchainService.getCurrentBlockChain();
                 objectOutput.writeObject(blockChain);
 
                 LinkedList<Block> returnedBlockchain = (LinkedList<Block>) objectInput.readObject();
                 log.info(" RETURNED BC LedgerId = " + returnedBlockchain.getLast().getLedgerId()  + " Size= " + returnedBlockchain.getLast().getTransactionLedger().size());
-                blockchainData.getBlockchainConsensus(returnedBlockchain);
+                blockchainService.getBlockchainConsensus(returnedBlockchain);
                 Thread.sleep(2000);
 
             } catch (SocketTimeoutException e) {
