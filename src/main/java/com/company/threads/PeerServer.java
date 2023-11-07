@@ -2,14 +2,16 @@ package com.company.threads;
 
 
 import com.company.servicedata.BlockchainData;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 
 
+@Slf4j
 public class PeerServer extends Thread {
 
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private final BlockchainData blockchainData;
 
     public PeerServer(Integer socketPort, BlockchainData blockchainData) throws IOException {
@@ -22,8 +24,8 @@ public class PeerServer extends Thread {
         while (true) {
             try {
                 new PeerRequestThread(serverSocket.accept(), blockchainData).start();
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            } catch (IOException e) {
+                log.info("{}", e.getMessage(), e);
             }
         }
     }

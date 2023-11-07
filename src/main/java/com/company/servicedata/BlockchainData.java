@@ -6,6 +6,7 @@ import com.company.model.Wallet;
 import com.company.service.WalletService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +27,9 @@ import static com.company.util.KeyHelper.getPrivateKey;
 import static com.company.util.KeyHelper.getPublicKey;
 
 @Component
+@Slf4j
 public class BlockchainData {
-    private WalletService walletService;
+    private final WalletService walletService;
 
     @Autowired
     public BlockchainData(WalletService walletService) throws NoSuchAlgorithmException {
@@ -37,8 +39,8 @@ public class BlockchainData {
         newBlockTransactionsFX = FXCollections.observableArrayList();
     }
 
-    private ObservableList<Transaction> newBlockTransactionsFX;
-    private ObservableList<Transaction> newBlockTransactions;
+    private final ObservableList<Transaction> newBlockTransactionsFX;
+    private final ObservableList<Transaction> newBlockTransactions;
     private LinkedList<Block> currentBlockChain = new LinkedList<>();
     private Block latestBlock;
     private boolean exit = false;
@@ -46,7 +48,7 @@ public class BlockchainData {
     private static final int TIMEOUT_INTERVAL = 65;
     private static final int MINING_INTERVAL = 60;
     //helper class.
-    private Signature signing = Signature.getInstance("SHA256WITHDSA");
+    private final Signature signing = Signature.getInstance("SHA256WITHDSA");
 
     //singleton class
     private static BlockchainData instance;
@@ -129,8 +131,7 @@ public class BlockchainData {
                 connection.close();
             }
         } catch (SQLException e) {
-            System.out.println("Problem with DB: " + e.getMessage());
-            e.printStackTrace();
+            log.info("Problem with DB: {}", e.getMessage(), e);
         }
 
     }
@@ -164,10 +165,9 @@ public class BlockchainData {
             stmt.close();
             connection.close();
         } catch (SQLException | NoSuchAlgorithmException e) {
-            System.out.println("Problem with DB: " + e.getMessage());
-            e.printStackTrace();
+            log.info("Problem with DB: {}", e.getMessage(), e);
         } catch (GeneralSecurityException e) {
-            e.printStackTrace();
+            log.info("{}", e.getMessage(), e);
         }
     }
 
@@ -194,7 +194,7 @@ public class BlockchainData {
             stmt.close();
             connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.info("{}", e.getMessage(), e);
         }
         return transactions;
     }
@@ -204,8 +204,7 @@ public class BlockchainData {
             finalizeBlock(walletService.loadWallet());
             addBlock(latestBlock);
         } catch (SQLException | GeneralSecurityException e) {
-            System.out.println("Problem with DB: " + e.getMessage());
-            e.printStackTrace();
+            log.info("Problem with DB: {}", e.getMessage(), e);
         }
     }
 
@@ -247,8 +246,7 @@ public class BlockchainData {
             pstmt.close();
             connection.close();
         } catch (SQLException e) {
-            System.out.println("Problem with DB: " + e.getMessage());
-            e.printStackTrace();
+            log.info("Problem with DB: {}", e.getMessage(), e);
         }
     }
 
@@ -271,8 +269,7 @@ public class BlockchainData {
                 }
             }
         } catch (SQLException | GeneralSecurityException e) {
-            System.out.println("Problem with DB: " + e.getMessage());
-            e.printStackTrace();
+            log.info("Problem with DB: {}", e.getMessage(), e);
         }
     }
 
@@ -296,13 +293,13 @@ public class BlockchainData {
                 // if only the transaction ledgers are different then combine them.
             } else if (!receivedBC.getLast().getTransactionLedger().equals(getCurrentBlockChain().getLast().getTransactionLedger())) {
                 updateTransactionLedgers(receivedBC);
-                System.out.println("Transaction ledgers updated");
+                log.info("Transaction ledgers updated");
                 return receivedBC;
             } else {
-//                System.out.println("blockchains are identical");
+//                log.info("blockchains are identical");
             }
         } catch (GeneralSecurityException e) {
-            e.printStackTrace();
+            log.info("{}", e.getMessage(), e);
         }
         return receivedBC;
     }
@@ -311,7 +308,7 @@ public class BlockchainData {
         for (Transaction transaction : receivedBC.getLast().getTransactionLedger()) {
             if (!getCurrentBlockChain().getLast().getTransactionLedger().contains(transaction) ) {
                 getCurrentBlockChain().getLast().getTransactionLedger().add(transaction);
-                System.out.println("current ledger id = " + getCurrentBlockChain().getLast().getLedgerId() + " transaction id = " + transaction.getLedgerId());
+                log.info("current ledger id = " + getCurrentBlockChain().getLast().getLedgerId() + " transaction id = " + transaction.getLedgerId());
                 addTransaction(transaction, false);
             }
         }
@@ -333,7 +330,7 @@ public class BlockchainData {
         //if both are old just do nothing
         if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
                 (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
-            System.out.println("both are old check other peers");
+            log.info("both are old check other peers");
             //If your blockchain is old but the received one is new use the received one
         } else if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
                 (lastMinedRcvdBlock + TIMEOUT_INTERVAL) >= LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
@@ -342,7 +339,7 @@ public class BlockchainData {
             replaceBlockchainInDatabase(receivedBC);
             setCurrentBlockChain(new LinkedList<>());
             loadBlockChain();
-            System.out.println("received blockchain won!, local BC was old");
+            log.info("received blockchain won!, local BC was old");
             //If received one is old but local is new send ours to them
         } else if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) > LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
                 (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
@@ -364,7 +361,7 @@ public class BlockchainData {
             replaceBlockchainInDatabase(receivedBC);
             setCurrentBlockChain(new LinkedList<>());
             loadBlockChain();
-            System.out.println("PeerClient blockchain won!, PeerServer's BC was old");
+            log.info("PeerClient blockchain won!, PeerServer's BC was old");
         } else if (initLocalBlockTIme < initRcvBlockTime) {
             return getCurrentBlockChain();
         }
@@ -378,7 +375,7 @@ public class BlockchainData {
         //if they are the same compare the mining points and luck in case of equal mining points
         //of last block to see who wins
         if (receivedBC.equals(getCurrentBlockChain())) {
-            //If received block has more mining points points or luck in case of tie
+            //If received block has more mining points or luck in case of tie
             // transfer all transactions to the winning block and add them in DB.
             if (receivedBC.getLast().getMiningPoints() > getCurrentBlockChain()
                     .getLast().getMiningPoints() || receivedBC.getLast().getMiningPoints()
@@ -398,7 +395,7 @@ public class BlockchainData {
                 replaceBlockchainInDatabase(receivedBC);
                 setCurrentBlockChain(new LinkedList<>());
                 loadBlockChain();
-                System.out.println("Received blockchain won!");
+                log.info("Received blockchain won!");
             } else {
                 // remove the reward transaction from their losing block and transfer
                 // the transactions to our winning block

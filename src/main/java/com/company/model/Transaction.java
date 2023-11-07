@@ -13,13 +13,13 @@ import static com.company.util.KeyHelper.getPublicKey;
 public class Transaction implements Serializable {
 
    private byte[] from;
-   private String fromFX;
+   private final String fromFX;
    private byte[] to;
-   private String toFX;
+   private final String toFX;
    private Integer value;
-   private String timestamp;
-   private byte[] signature;
-   private  String signatureFX;
+   private final String timestamp;
+   private final byte[] signature;
+   private final String signatureFX;
    private Integer ledgerId;
 
 

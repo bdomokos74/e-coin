@@ -9,6 +9,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -19,6 +20,7 @@ import java.util.Optional;
 import static com.company.util.KeyHelper.getPublicKey;
 
 @Controller
+@Slf4j
 public class MainWindowController {
     @Autowired
     private WalletService walletService;
@@ -71,8 +73,7 @@ public class MainWindowController {
         try {
             newTransactionController.getDialogPane().setContent(fxmlLoader.load());
         } catch (IOException e) {
-            System.out.println("Cant load dialog");
-            e.printStackTrace();
+            log.info("Cant load dialog", e);
             return;
         }
         newTransactionController.getDialogPane().getButtonTypes().add(ButtonType.FINISH);

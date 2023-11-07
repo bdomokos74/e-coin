@@ -3,11 +3,6 @@ package com.company.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JavaType;
-import org.hibernate.type.descriptor.java.ByteArrayJavaType;
-
-import java.io.Serializable;
-import java.security.*;
 
 @Entity
 @Data

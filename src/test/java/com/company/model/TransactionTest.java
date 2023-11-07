@@ -1,5 +1,6 @@
 package com.company.model;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import java.security.KeyFactory;
@@ -10,14 +11,16 @@ import java.sql.*;
 import java.util.Arrays;
 
 import static com.company.util.FileHelper.getDbPath;
+
+@Slf4j
 class TransactionTest {
     @Test
     void publicKeyFactoryTest() throws Exception {
-        System.out.println(Arrays.toString(Security.getProviders()));
+        log.info(Arrays.toString(Security.getProviders()));
         X509EncodedKeySpec spec = new X509EncodedKeySpec(getKeyBytes(), "SHA-256");
         KeyFactory kf = KeyFactory.getInstance("DSA");
         PublicKey pk = kf.generatePublic(spec);
-        System.out.println(pk.getFormat());
+        log.info(pk.getFormat());
     }
 
     @Test
