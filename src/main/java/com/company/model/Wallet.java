@@ -1,18 +1,20 @@
 package com.company.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
-@Data
+@AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
 public class Wallet {
     @Id
     private Long id;
-    @Column
+
+    @Column(name = "PUBLIC_KEY", length = 2048 )
     private byte[] publicKey;
-    @Column
+    @Column(name = "PRIVATE_KEY", length = 2048)
     private byte[] privateKey;
 
     public Wallet(byte[] publicKey, byte[] privateKey) {

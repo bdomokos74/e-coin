@@ -6,24 +6,25 @@ CREATE TABLE IF NOT EXISTS WALLET
     PRIMARY KEY (ID)
 );
 
-create sequence BLOCKCHAIN_SEQ;
+create sequence SEQ_BLOCKCHAIN start with 1 increment by 1;
 
+--drop table BLOCKCHAIN;
 CREATE TABLE IF NOT EXISTS BLOCKCHAIN
 (
-    ID            INTEGER not null,
-    PREVIOUS_HASH BLOB(2k)    NOT NULL,
-    CURRENT_HASH  BLOB(2k)    NOT NULL,
     LEDGER_ID     INTEGER NOT NULL UNIQUE,
+    PREVIOUS_HASH BLOB(2k)    NOT NULL,
+    CURRENT_HASH  BLOB(2k)    , -- need to save to get ID. TODO: fix this
     CREATED_ON    TEXT,
     CREATED_BY    BLOB(2k),
     MINING_POINTS TEXT,
     LUCK          NUMERIC,
-    PRIMARY KEY (ID)
+    PRIMARY KEY (LEDGER_ID)
 );
 
+--drop table TRANSACTIONS;
 CREATE TABLE IF NOT EXISTS TRANSACTIONS
 (
-    ID         INTEGER NOT NULL,
+    ID         VARCHAR2(36) NOT NULL,
     FROM_W     BLOB(2k),
     TO_W       BLOB(2k),
     LEDGER_ID  INTEGER,

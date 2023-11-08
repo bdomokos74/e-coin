@@ -42,6 +42,7 @@ public class BlockchainService {
     private static final int MINING_INTERVAL = 60;
 
     Comparator<Transaction> transactionComparator = Comparator.comparing(Transaction::getTimestamp);
+
     public ObservableList<Transaction> getTransactionLedgerFX() {
         newBlockTransactionsFX.clear();
         newBlockTransactions.sort(transactionComparator);
@@ -63,6 +64,8 @@ public class BlockchainService {
                 Block firstBlock = new Block();
                 firstBlock.setMinedBy(getPublicKey(wallet).getEncoded());
                 firstBlock.setTimeStamp(LocalDateTime.now().toString());
+                firstBlock.setPrevHash( new byte[]{0});
+                blockChainRepository.save(firstBlock); // to populate the id
 //                firstBlock.setLedgerId(1L);
                 //helper class.
                 Signature signing = Signature.getInstance("SHA256withDSA");
@@ -70,17 +73,64 @@ public class BlockchainService {
                 signing.update(firstBlock.toString().getBytes());
                 firstBlock.setCurrHash(signing.sign());
                 log.info("block: {}", firstBlock);
-                blockChainRepository.save(firstBlock);
-                Transaction initBlockRewardTransaction = walletService.createTransaction( getPublicKey(wallet).getEncoded(), 100, 1L);
-                addTransaction(initBlockRewardTransaction, true);
+                Transaction initBlockRewardTransaction = walletService.createTransaction(getPublicKey(wallet).getEncoded(), 100, 1L);
+                validateTransaction(initBlockRewardTransaction, true);
                 addTransactionState(initBlockRewardTransaction);
+                //firstBlock.addTransaction(initBlockRewardTransaction);
+                blockChainRepository.save(firstBlock);
             }
         } catch (GeneralSecurityException e) {
             log.error("Failed to initialize", e);
         }
         loadBlockChain();
     }
+/*
+ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOCKCHAIN ");
+            Transaction initBlockRewardTransaction = null;
+            if (!resultSetBlockchain.next()) {
+                Block firstBlock = new Block();
+                firstBlock.setMinedBy(WalletData.getInstance().getWallet().getPublicKey().getEncoded());
+                firstBlock.setTimeStamp(LocalDateTime.now().toString());
+                //helper class.
+                Signature signing = Signature.getInstance("SHA256withDSA");
+                signing.initSign(WalletData.getInstance().getWallet().getPrivateKey());
+                signing.update(firstBlock.toString().getBytes());
+                firstBlock.setCurrHash(signing.sign());
+                PreparedStatement pstmt = blockchainConnection
+                        .prepareStatement("INSERT INTO BLOCKCHAIN(PREVIOUS_HASH, CURRENT_HASH , LEDGER_ID," +
+                                " CREATED_ON, CREATED_BY,MINING_POINTS,LUCK ) " +
+                        " VALUES (?,?,?,?,?,?,?) ");
+                pstmt.setBytes(1, firstBlock.getPrevHash());
+                pstmt.setBytes(2, firstBlock.getCurrHash());
+                pstmt.setInt(3, firstBlock.getLedgerId());
+                pstmt.setString(4, firstBlock.getTimeStamp());
+                pstmt.setBytes(5, WalletData.getInstance().getWallet().getPublicKey().getEncoded());
+                pstmt.setInt(6, firstBlock.getMiningPoints());
+                pstmt.setDouble(7, firstBlock.getLuck());
+                pstmt.executeUpdate();
+                Signature transSignature = Signature.getInstance("SHA256withDSA");
+                initBlockRewardTransaction = new Transaction(WalletData.getInstance().getWallet(),WalletData.getInstance().getWallet().getPublicKey().getEncoded(),100,1,transSignature);
+            }
+            resultSetBlockchain.close();
 
+            blockchainStmt.executeUpdate("CREATE TABLE IF NOT EXISTS TRANSACTIONS ( " +
+                    " ID INTEGER NOT NULL UNIQUE, " +
+                    " \"FROM\" BLOB, " +
+                    " \"TO\" BLOB, " +
+                    " LEDGER_ID INTEGER, " +
+                    " VALUE INTEGER, " +
+                    " SIGNATURE BLOB UNIQUE, " +
+                    " CREATED_ON TEXT, " +
+                    " PRIMARY KEY(ID AUTOINCREMENT) " +
+                    ")"
+            );
+            if (initBlockRewardTransaction != null) {
+                BlockchainData.getInstance().addTransaction(initBlockRewardTransaction,true);
+                BlockchainData.getInstance().addTransactionState(initBlockRewardTransaction);
+            }
+            blockchainStmt.close();
+            blockchainConnection.close();
+ */
 
     private Integer getBalance(LinkedList<Block> blockChain, ObservableList<Transaction> currentLedger, PublicKey walletAddress) {
         Integer balance = 0;
@@ -108,7 +158,7 @@ public class BlockchainService {
             if (!block.isVerified(signing)) {
                 throw new GeneralSecurityException("Block validation failed");
             }
-            ArrayList<Transaction> transactions = block.getTransactionLedger();
+            List<Transaction> transactions = block.getTransactionLedger();
             for (Transaction transaction : transactions) {
                 if (!transaction.isVerified(signing)) {
                     throw new GeneralSecurityException("Transaction validation failed");
@@ -116,9 +166,19 @@ public class BlockchainService {
             }
         }
     }
+
     public void addTransactionState(Transaction transaction) {
         newBlockTransactions.add(transaction);
         newBlockTransactions.sort(transactionComparator);
+    }
+
+
+    public void validateTransaction(Transaction transaction, boolean blockReward) throws GeneralSecurityException {
+        PublicKey pk = getPublicKey(transaction.getFrom());
+        Integer balance = getBalance(currentBlockChain, newBlockTransactions, pk);
+        if (balance < transaction.getValue() && !blockReward) {
+            throw new GeneralSecurityException("Not enough funds by sender to record transaction");
+        }
     }
 
     public void addTransaction(Transaction transaction, boolean blockReward) throws GeneralSecurityException {
@@ -126,9 +186,10 @@ public class BlockchainService {
         Integer balance = getBalance(currentBlockChain, newBlockTransactions, pk);
         if (balance < transaction.getValue() && !blockReward) {
             throw new GeneralSecurityException("Not enough funds by sender to record transaction");
-        } else {
-            transactionRepository.save(transaction);
         }
+
+        transactionRepository.save(transaction);
+
         /*
         try {
             PublicKey pk = getPublicKey(transaction.getFrom());
@@ -164,7 +225,7 @@ public class BlockchainService {
 
     public void loadBlockChain() {
         try {
-            currentBlockChain = new LinkedList<> (blockChainRepository.findAll());
+            currentBlockChain = new LinkedList<>(blockChainRepository.findAll());
 //            Connection connection = DriverManager.getConnection
 //                    (getDbPath("blockchain.db"));
 //            Statement stmt = connection.createStatement();
@@ -320,7 +381,7 @@ public class BlockchainService {
 
     private void updateTransactionLedgers(LinkedList<Block> receivedBC) throws GeneralSecurityException {
         for (Transaction transaction : receivedBC.getLast().getTransactionLedger()) {
-            if (!getCurrentBlockChain().getLast().getTransactionLedger().contains(transaction) ) {
+            if (!getCurrentBlockChain().getLast().getTransactionLedger().contains(transaction)) {
                 getCurrentBlockChain().getLast().getTransactionLedger().add(transaction);
                 log.info("current ledger id = " + getCurrentBlockChain().getLast().getLedgerId() + " transaction id = " + transaction.getLedgerId());
                 addTransaction(transaction, false);
@@ -328,7 +389,7 @@ public class BlockchainService {
         }
         getCurrentBlockChain().getLast().getTransactionLedger().sort(transactionComparator);
         for (Transaction transaction : getCurrentBlockChain().getLast().getTransactionLedger()) {
-            if (!receivedBC.getLast().getTransactionLedger().contains(transaction) ) {
+            if (!receivedBC.getLast().getTransactionLedger().contains(transaction)) {
                 receivedBC.getLast().getTransactionLedger().add(transaction);
             }
         }
@@ -343,11 +404,11 @@ public class BlockchainService {
                 (receivedBC.getLast().getTimeStamp()).toEpochSecond(ZoneOffset.UTC);
         //if both are old just do nothing
         if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
-                (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
+            (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
             log.info("both are old check other peers");
             //If your blockchain is old but the received one is new use the received one
         } else if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
-                (lastMinedRcvdBlock + TIMEOUT_INTERVAL) >= LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
+                   (lastMinedRcvdBlock + TIMEOUT_INTERVAL) >= LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
             //we reset the mining points since we weren't contributing until now.
             setMiningPoints(0);
             replaceBlockchainInDatabase(receivedBC);
@@ -356,7 +417,7 @@ public class BlockchainService {
             log.info("received blockchain won!, local BC was old");
             //If received one is old but local is new send ours to them
         } else if ((lastMinedLocalBlock + TIMEOUT_INTERVAL) > LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) &&
-                (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
+                   (lastMinedRcvdBlock + TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
 
             return getCurrentBlockChain();
         }
@@ -393,8 +454,8 @@ public class BlockchainService {
             // transfer all transactions to the winning block and add them in DB.
             if (receivedBC.getLast().getMiningPoints() > getCurrentBlockChain()
                     .getLast().getMiningPoints() || receivedBC.getLast().getMiningPoints()
-                    .equals(getCurrentBlockChain().getLast().getMiningPoints()) &&
-                    receivedBC.getLast().getLuck() > getCurrentBlockChain().getLast().getLuck()) {
+                                                            .equals(getCurrentBlockChain().getLast().getMiningPoints()) &&
+                                                    receivedBC.getLast().getLuck() > getCurrentBlockChain().getLast().getLuck()) {
                 //remove the reward transaction from our losing block and
                 // transfer the transactions to the winning block
                 getCurrentBlockChain().getLast().getTransactionLedger().remove(0);
@@ -435,9 +496,13 @@ public class BlockchainService {
         this.currentBlockChain = currentBlockChain;
     }
 
-    public static int getTimeoutInterval() { return TIMEOUT_INTERVAL; }
+    public static int getTimeoutInterval() {
+        return TIMEOUT_INTERVAL;
+    }
 
-    public static int getMiningInterval() { return MINING_INTERVAL; }
+    public static int getMiningInterval() {
+        return MINING_INTERVAL;
+    }
 
     public int getMiningPoints() {
         return miningPoints;

@@ -1,47 +1,50 @@
 package com.company.model;
 
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.UUID;
+import java.util.*;
 
 import static com.company.util.KeyHelper.getPublicKey;
 
-@Entity(name = "BLOCKCHAIN")
+@Entity
+@Table(name = "BLOCKCHAIN")
+@Builder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Getter
 @Setter
+@AllArgsConstructor
 public class Block implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_BLOCKCHAIN")
+    @SequenceGenerator(name = "SEQ_BLOCKCHAIN", sequenceName = "SEQ_BLOCKCHAIN", allocationSize = 1)
+    @Column(name = "LEDGER_ID")
+    private Long ledgerId; // = 1;
+
     @Column(name = "PREVIOUS_HASH")
     @EqualsAndHashCode.Include
     private byte[] prevHash;
-    @Column(name = "CURRENT_HASH")
+    @Column(name = "CURRENT_HASH", length = 2048)
     private byte[] currHash;
-    @Column(name = "CREATED_ON")
+    @Column(name = "CREATED_ON", length = 2048)
     private String timeStamp;
-    @Column(name = "CREATED_BY")
+    @Column(name = "CREATED_BY", length = 2048)
     private byte[] minedBy;
 
-    @Id
-    @GeneratedValue
-    @Column(name = "LEDGER_ID")
-    private Long ledgerId; // = 1;
     @Column(name = "MINING_POINTS")
     private Integer miningPoints = 0;
     @Column(name = "LUCK")
     private Double luck = 0.0;
 
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
+    @OneToMany(targetEntity = Transaction.class,
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER,
+            orphanRemoval = true)
     @JoinColumn(name = "LEDGER_ID")
-    private ArrayList<Transaction> transactionLedger;
+    private List<Transaction> transactionLedger = new ArrayList<>();
 
     //This constructor is used when we retrieve it from the db
     public Block(byte[] prevHash, byte[] currHash, String timeStamp, byte[] minedBy,Long ledgerId,
@@ -86,5 +89,10 @@ public class Block implements Serializable {
                 ", miningPoints=" + miningPoints +
                 ", luck=" + luck +
                 '}';
+    }
+
+    public void addTransaction(Transaction transaction) {
+        transaction.setLedgerId(this.ledgerId);
+        transactionLedger.add(transaction);
     }
 }
