@@ -23,6 +23,7 @@ import static com.company.util.KeyHelper.*;
 @Transactional
 public class WalletService {
     private final WalletRepository walletRepository;
+
     public Wallet getOrCreateWallet() {
         return walletRepository.findById(1L).orElseGet(() -> {
             try {
@@ -37,20 +38,45 @@ public class WalletService {
         });
     }
 
+    public Transaction createTransactionFromNewWallet(byte[] toAddress, Integer value, Long ledgerId) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
+        try {
+            KeyPairRecord keyPairRecord = createKeyPair();
+            Wallet fromWallet = new Wallet(keyPairRecord.publicKey(), keyPairRecord.privateKey());
+            Transaction result = new Transaction(
+                    getPublicKey(fromWallet).getEncoded(),
+                    toAddress,
+                    value,
+                    LocalDateTime.now().toString(),
+                    null,
+                    ledgerId
+            );
+
+            String sr = result.toString();
+            Signature signing = Signature.getInstance("SHA256withDSA");
+            signing.initSign(getPrivateKey(fromWallet));
+            signing.update(sr.getBytes());
+            result.setSignature(signing.sign());
+            return result;
+        } catch (
+                NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Wallet loadWallet() {
         return walletRepository.findById(1L).orElseThrow();
     }
 
-    public Transaction createTransaction( byte[] toAddress, Integer value, Long ledgerId) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
+    public Transaction createTransaction(byte[] toAddress, Integer value, Long ledgerId) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
         Wallet fromWallet = walletRepository.findById(1L).orElseThrow();
         Transaction result = new Transaction(
-            getPublicKey(fromWallet).getEncoded(),
-            toAddress,
-            value ,
-            LocalDateTime.now().toString(),
-            null,
-            ledgerId
-            );
+                getPublicKey(fromWallet).getEncoded(),
+                toAddress,
+                value,
+                LocalDateTime.now().toString(),
+                null,
+                ledgerId
+        );
 
         String sr = result.toString();
         Signature signing = Signature.getInstance("SHA256withDSA");

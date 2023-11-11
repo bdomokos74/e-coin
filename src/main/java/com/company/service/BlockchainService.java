@@ -38,8 +38,8 @@ public class BlockchainService {
     private Block latestBlock;
     private boolean exit = false;
     private int miningPoints;
-    private static final int TIMEOUT_INTERVAL = 65;
-    private static final int MINING_INTERVAL = 60;
+    public static final int TIMEOUT_INTERVAL = 65;
+    public static final int MINING_INTERVAL = 60;
 
     Comparator<Transaction> transactionComparator = Comparator.comparing(Transaction::getTimestamp);
 
@@ -72,11 +72,11 @@ public class BlockchainService {
                 signing.initSign(getPrivateKey(wallet));
                 signing.update(firstBlock.toString().getBytes());
                 firstBlock.setCurrHash(signing.sign());
-                log.info("block: {}", firstBlock);
-                Transaction initBlockRewardTransaction = walletService.createTransaction(getPublicKey(wallet).getEncoded(), 100, 1L);
+                log.info("startBlockChain created first block: ledgerId={} ts={}", firstBlock.getLedgerId(), firstBlock.getTimeStamp());
+                Transaction initBlockRewardTransaction = walletService.createTransaction(getPublicKey(wallet).getEncoded(), 100, firstBlock.getLedgerId());
                 validateTransaction(initBlockRewardTransaction, true);
+                firstBlock.addTransaction(initBlockRewardTransaction);
                 addTransactionState(initBlockRewardTransaction);
-                //firstBlock.addTransaction(initBlockRewardTransaction);
                 blockChainRepository.save(firstBlock);
             }
         } catch (GeneralSecurityException e) {
@@ -156,12 +156,12 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
         Signature signing = Signature.getInstance("SHA256withDSA");
         for (Block block : currentBlockChain) {
             if (!block.isVerified(signing)) {
-                throw new GeneralSecurityException("Block validation failed");
+                throw new GeneralSecurityException("Block validation failed, block.ledgerId: "+ block.getLedgerId() );
             }
             List<Transaction> transactions = block.getTransactionLedger();
             for (Transaction transaction : transactions) {
                 if (!transaction.isVerified(signing)) {
-                    throw new GeneralSecurityException("Transaction validation failed");
+                    throw new GeneralSecurityException("Transaction validation failed, ledgerId: "+ transaction.getLedgerId()+", transactionId: "+transaction.getId());
                 }
             }
         }
@@ -244,11 +244,12 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
 //            }
 
             latestBlock = currentBlockChain.getLast();
-            Wallet wallet = walletService.getOrCreateWallet();
-            Transaction transaction = walletService.createTransaction(getPublicKey(wallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
+            Wallet targetWallet = walletService.getOrCreateWallet();
+            Transaction transaction = walletService.createTransactionFromNewWallet(getPublicKey(targetWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
             newBlockTransactions.clear();
             newBlockTransactions.add(transaction);
             verifyBlockChain(currentBlockChain);
+            log.info("loadBlockChain verifying: {}", currentBlockChain.getLast().getLedgerId());
 //            resultSet.close();
 //            stmt.close();
 //            connection.close();
@@ -273,7 +274,8 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
     private void finalizeBlock(Wallet minersWallet) throws GeneralSecurityException, SQLException {
         Signature signing = Signature.getInstance("SHA256withDSA");
         latestBlock = new Block(currentBlockChain);
-        latestBlock.setTransactionLedger(new ArrayList<>(newBlockTransactions));
+//        latestBlock.setTransactionLedger(new ArrayList<>(newBlockTransactions));
+        newBlockTransactions.forEach(latestBlock::addTransaction);
         latestBlock.setTimeStamp(LocalDateTime.now().toString());
         latestBlock.setMinedBy(getPublicKey(minersWallet).getEncoded());
         latestBlock.setMiningPoints(miningPoints);
@@ -285,7 +287,7 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
         //Reward transaction
         latestBlock.getTransactionLedger().sort(transactionComparator);
         addTransaction(latestBlock.getTransactionLedger().get(0), true);
-        Transaction transaction = walletService.createTransaction(getPublicKey(minersWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
+        Transaction transaction = walletService.createTransactionFromNewWallet(getPublicKey(minersWallet).getEncoded(), 100, latestBlock.getLedgerId() + 1);
         newBlockTransactions.clear();
         newBlockTransactions.add(transaction);
     }
@@ -351,6 +353,7 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
     public LinkedList<Block> getBlockchainConsensus(LinkedList<Block> receivedBC) {
         try {
             //Verify the validity of the received blockchain.
+            log.info("getBlockchainConsensus: verifying received: {}", receivedBC.getLast().getLedgerId());
             verifyBlockChain(receivedBC);
             //Check if we have received an identical blockchain.
             if (!Arrays.equals(receivedBC.getLast().getCurrHash(), getCurrentBlockChain().getLast().getCurrHash())) {
@@ -371,10 +374,10 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
                 log.info("Transaction ledgers updated");
                 return receivedBC;
             } else {
-//                log.info("blockchains are identical");
+                log.info("blockchains are identical");
             }
         } catch (GeneralSecurityException e) {
-            log.info("{}", e.getMessage(), e);
+            log.info("getBlockchainConsensus failed to verify received block: {}", e.getMessage(), e);
         }
         return receivedBC;
     }
@@ -496,13 +499,6 @@ ResultSet resultSetBlockchain = blockchainStmt.executeQuery(" SELECT * FROM BLOC
         this.currentBlockChain = currentBlockChain;
     }
 
-    public static int getTimeoutInterval() {
-        return TIMEOUT_INTERVAL;
-    }
-
-    public static int getMiningInterval() {
-        return MINING_INTERVAL;
-    }
 
     public int getMiningPoints() {
         return miningPoints;

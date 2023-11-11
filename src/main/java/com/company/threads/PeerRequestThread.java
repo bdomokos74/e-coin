@@ -18,6 +18,7 @@ public class PeerRequestThread extends Thread {
     private final BlockchainService blockchainService;
 
     public PeerRequestThread(Socket socket, BlockchainService blockchainService) {
+        super("PeerRequestThread");
         this.socket = socket;
         this.blockchainService = blockchainService;
     }
@@ -30,9 +31,11 @@ public class PeerRequestThread extends Thread {
             ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
 
             LinkedList<Block> recievedBC = (LinkedList<Block>) objectInput.readObject();
-            log.info("LedgerId = " + recievedBC.getLast().getLedgerId()  +
-                    " Size= " + recievedBC.getLast().getTransactionLedger().size());
-           objectOutput.writeObject(blockchainService.getBlockchainConsensus(recievedBC));
+            log.info("received: LedgerId = " + recievedBC.getLast().getLedgerId() + " Size= " + recievedBC.getLast().getTransactionLedger().size());
+            log.debug("received lastblock: {}", recievedBC.getLast());
+            LinkedList<Block> consensus = blockchainService.getBlockchainConsensus(recievedBC);
+            log.debug("sending consensus, lastblock: {}", consensus.getLast());
+            objectOutput.writeObject(consensus);
         } catch (IOException | ClassNotFoundException e) {
             log.info("{}", e.getMessage(), e);
         }

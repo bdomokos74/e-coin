@@ -28,9 +28,9 @@ public class Transaction implements Serializable {
    @Column(name = "ID", nullable = false, length = 36)
    private UUID id;
 
-   @Column(name = "FROM_W")
+   @Column(name = "FROM_W", length = 2048 )
    private byte[] from;
-   @Column(name = "TO_W")
+   @Column(name = "TO_W", length = 2048 )
    private byte[] to;
    @Column(name = "VALUE_V")
    private Integer value;
