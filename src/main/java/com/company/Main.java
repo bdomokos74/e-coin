@@ -2,7 +2,6 @@ package com.company;
 
 
 import com.company.service.BlockchainService;
-import com.company.threads.MiningThread;
 import com.company.threads.PeerClient;
 import com.company.threads.PeerServer;
 import com.company.threads.UI;
@@ -14,10 +13,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @RequiredArgsConstructor
 @Slf4j
+@EnableScheduling
+@EnableAsync
 public class Main implements ApplicationListener<ECoin.StageReadyEvent> {
     private final BlockchainService blockchainService;
     private final ApplicationContext applicationContext;
@@ -39,10 +42,7 @@ public class Main implements ApplicationListener<ECoin.StageReadyEvent> {
         Stage stage = event.getStage();
         new UI(name, applicationContext).start(stage);
 
-        peerClient.startThread();
         peerServer.serve();
-
-        new MiningThread(blockchainService).start();
     }
 
 }

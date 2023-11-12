@@ -2,8 +2,9 @@ package com.company.threads;
 
 import com.company.model.Block;
 import com.company.service.BlockchainService;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,15 +21,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PeerClient {
-    public static final int CLIENT_SLEEP_MILLIS = 4000;
     public static final int SOCKET_TIMEOUT_MILLIS = 5000;
     private final Queue<Integer> queue = new ConcurrentLinkedQueue<>();
     private final BlockchainService blockchainService;
 
-    @Autowired
-    public PeerClient(@Value("${peer.port}") String clientPorts, BlockchainService blockchainService) {
-        this.blockchainService = blockchainService;
+    @Value("${peer.port}")
+    private String clientPorts;
+
+    @PostConstruct
+    void init() {
+        log.info("adding ports: {}", clientPorts);
         this.queue.addAll(getPeerPorts(clientPorts));
     }
 
@@ -36,46 +40,43 @@ public class PeerClient {
         return Arrays.stream(ports.split(",")).map(Integer::parseInt).toList();
     }
 
-    public void startThread() {
-        new Thread(this::run, "ClientThread").start();
-    }
+    public void sendPeerRequest() {
+        try (Socket socket = new Socket("127.0.0.1", queue.peek())) {
+            log.info("Sending blockchain object on port: " + queue.peek());
+            queue.add(queue.poll());
+            socket.setSoTimeout(SOCKET_TIMEOUT_MILLIS);
 
-    public void run() {
-        while (true) {
-            try (Socket socket = new Socket("127.0.0.1", queue.peek())) {
-                log.info("Sending blockchain object on port: " + queue.peek());
-                queue.add(queue.poll());
-                socket.setSoTimeout(SOCKET_TIMEOUT_MILLIS);
+            ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
 
-                ObjectOutputStream objectOutput = new ObjectOutputStream(socket.getOutputStream());
-                ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
+            LinkedList<Block> blockChain = blockchainService.getCurrentBlockChain();
+            log.info("sending: ledgerId={}, ts={}", blockChain.getLast().getLedgerId(), blockChain.getLast().getTimeStamp());
+            objectOutput.writeObject(blockChain);
 
-                LinkedList<Block> blockChain = blockchainService.getCurrentBlockChain();
-                log.info("sending: ledgerId={}, ts={}", blockChain.getLast().getLedgerId(), blockChain.getLast().getTimeStamp());
-                objectOutput.writeObject(blockChain);
-
-                LinkedList<Block> returnedBlockchain = (LinkedList<Block>) objectInput.readObject();
-                log.info("\tRETURNED BC LedgerId = " + returnedBlockchain.getLast().getLedgerId()  + " Size= " + returnedBlockchain.getLast().getTransactionLedger().size());
-                LinkedList<Block> consensus = blockchainService.getBlockchainConsensus(returnedBlockchain);
-                log.debug("\tconsensus: {}", consensus.getLast());
-
-                Thread.sleep(CLIENT_SLEEP_MILLIS);
-
-            } catch (SocketTimeoutException e) {
-                log.info("The socket timed out");
-                queue.add(queue.poll());
-            } catch (IOException e) {
-//                log.info("Client Error: " + e.getMessage() + " -- Error on port: "+ queue.peek());
-                queue.add(queue.poll());
-                try {
-                    Thread.sleep(1000); // for now avoid spamming the log
-                } catch (InterruptedException ex) {
-                    log.info("{}", ex.getMessage(), ex);
-                }
-            } catch (InterruptedException | ClassNotFoundException e) {
-                log.info("{}", e.getMessage(), e);
-                queue.add(queue.poll());
+            LinkedList<Block> returnedBlockchain = (LinkedList<Block>) objectInput.readObject();
+            if(!returnedBlockchain.isEmpty()) {
+                log.info("\tRETURNED BC LedgerId = " + returnedBlockchain.getLast().getLedgerId() + " Size= " + returnedBlockchain.getLast().getTransactionLedger().size());
             }
+            LinkedList<Block> consensus = blockchainService.getBlockchainConsensus(returnedBlockchain);
+            log.debug("\tconsensus: {}", consensus.getLast());
+
+//            Thread.sleep(CLIENT_SLEEP_MILLIS);
+
+        } catch (SocketTimeoutException e) {
+            log.info("The socket timed out");
+            queue.add(queue.poll());
+        } catch (IOException e) {
+//                log.info("Client Error: " + e.getMessage() + " -- Error on port: "+ queue.peek());
+            queue.add(queue.poll());
+            try {
+                Thread.sleep(1000); // for now avoid spamming the log
+            } catch (InterruptedException ex) {
+                log.info("{}", ex.getMessage(), ex);
+            }
+        } catch ( ClassNotFoundException e) {
+            log.info("{}", e.getMessage(), e);
+            queue.add(queue.poll());
         }
     }
 }
+

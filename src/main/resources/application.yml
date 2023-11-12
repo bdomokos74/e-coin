@@ -16,6 +16,11 @@ spring:
     url: jdbc:h2:file:${DB_PATH}
 #  jpa:
 #    show-sql: true
+
+#logging:
+#  level:
+#    com.company: debug
+
 ---
 
 spring:
