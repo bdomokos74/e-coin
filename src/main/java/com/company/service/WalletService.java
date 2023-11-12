@@ -5,8 +5,10 @@ import com.company.model.Wallet;
 import com.company.repository.WalletRepository;
 import com.company.util.KeyPairRecord;
 import jakarta.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.InvalidKeyException;
@@ -21,8 +23,12 @@ import static com.company.util.KeyHelper.*;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
+@Getter
 public class WalletService {
     private final WalletRepository walletRepository;
+
+    @Value("${name}")
+    private String walletName;
 
     public Wallet getOrCreateWallet() {
         return walletRepository.findById(1L).orElseGet(() -> {

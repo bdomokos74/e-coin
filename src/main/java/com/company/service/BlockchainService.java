@@ -8,7 +8,9 @@ import com.company.repository.TransactionRepository;
 import jakarta.transaction.Transactional;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +28,8 @@ import static com.company.util.KeyHelper.getPublicKey;
 @Component
 @Slf4j
 @RequiredArgsConstructor
+@Getter
+@Setter
 @Transactional
 public class BlockchainService {
     private final WalletService walletService;
@@ -51,7 +55,7 @@ public class BlockchainService {
     }
     public ObservableList<Transaction> getTransactionsForBlockFX(long i) {
         newBlockTransactionsFX.clear();
-        newBlockTransactionsFX.addAll(currentBlockChain.stream().filter(block -> block.getLedgerId() == i).findAny().get().getTransactionLedger());
+        newBlockTransactionsFX.addAll(currentBlockChain.stream().filter(block -> block.getLedgerId() == i).findAny().orElseThrow().getTransactionLedger());
         return FXCollections.observableArrayList(newBlockTransactionsFX);
     }
 
@@ -172,7 +176,7 @@ public class BlockchainService {
     public void mineBlock() {
         try {
             finalizeBlock(walletService.loadWallet());
-            addBlock(latestBlock);
+            blockChainRepository.save(latestBlock);
         } catch (SQLException | GeneralSecurityException e) {
             log.info("Problem with DB: {}", e.getMessage(), e);
         }
@@ -200,16 +204,8 @@ public class BlockchainService {
         newBlockTransactions.add(transaction);
     }
 
-    public void addBlock(Block block) {
-        blockChainRepository.save(block);
-    }
-
     private void replaceBlockchainInDatabase(LinkedList<Block> receivedBC) throws GeneralSecurityException {
         blockChainRepository.deleteAll();
-//        try {
-//            Connection connection = DriverManager.getConnection
-//                    (getDbPath("blockchain.db"));
-//            Statement clearDBStatement = connection.createStatement();
 //            clearDBStatement.executeUpdate(" DELETE FROM BLOCKCHAIN ");
 //            clearDBStatement.executeUpdate(" DELETE FROM TRANSACTIONS ");
 //            clearDBStatement.close();
@@ -223,11 +219,8 @@ public class BlockchainService {
 //                    rewardTransaction = false;
 //                }
 //            }
-//        } catch (SQLException | GeneralSecurityException e) {
-//            log.info("Problem with DB: {}", e.getMessage(), e);
-//        }
         for (Block block : receivedBC) {
-            addBlock(block);
+            blockChainRepository.save(block);
             boolean rewardTransaction = true;
             block.getTransactionLedger().sort(transactionComparator);
             for (Transaction transaction : block.getTransactionLedger()) {
@@ -376,30 +369,5 @@ public class BlockchainService {
             }
         }
         return null;
-    }
-
-    public LinkedList<Block> getCurrentBlockChain() {
-        return currentBlockChain;
-    }
-
-    public void setCurrentBlockChain(LinkedList<Block> currentBlockChain) {
-        this.currentBlockChain = currentBlockChain;
-    }
-
-
-    public int getMiningPoints() {
-        return miningPoints;
-    }
-
-    public void setMiningPoints(int miningPoints) {
-        this.miningPoints = miningPoints;
-    }
-
-    public boolean isExit() {
-        return exit;
-    }
-
-    public void setExit(boolean exit) {
-        this.exit = exit;
     }
 }

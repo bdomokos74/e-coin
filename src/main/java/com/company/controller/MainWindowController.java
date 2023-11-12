@@ -5,6 +5,8 @@ import com.company.model.Transaction;
 import com.company.service.BlockchainService;
 import com.company.service.WalletService;
 import javafx.application.Platform;
+import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
@@ -14,10 +16,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.BorderPane;
+import javafx.util.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.DigestUtils;
 
@@ -26,7 +28,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Base64;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static com.company.util.KeyHelper.getPublicKey;
 
@@ -34,8 +35,10 @@ import static com.company.util.KeyHelper.getPublicKey;
 @Slf4j
 @RequiredArgsConstructor
 public class MainWindowController {
+
     private static final String CURRENT_BLOCK_TRANSACTION_LABEL = "Current block transactions";
     private static final String SPECIFIC_BLOCK_TRANSACTION_LABEL = "Transactions for block ledgerId=";
+    public static final int REFRESH_SECONDS = 30;
 
     private final WalletService walletService;
     private final BlockchainService blockchainService;
@@ -48,6 +51,8 @@ public class MainWindowController {
 
     @FXML
     public TableColumn transactionTableHeader;
+    @FXML
+    public Button resetTransactionsButton;
 
     @FXML
     private TableColumn<Transaction, String> from;
@@ -95,6 +100,7 @@ public class MainWindowController {
 
     public void initialize() {
 
+
         from.setCellValueFactory(new PropertyValueFactory<>("fromFX"));
         to.setCellValueFactory(new PropertyValueFactory<>("toFX"));
         value.setCellValueFactory(new PropertyValueFactory<>("value"));
@@ -111,6 +117,7 @@ public class MainWindowController {
         luck.setCellValueFactory(new PropertyValueFactory<>("luckFX"));
 
         addIconToButton(copyPkButton, "/icons/content_copy.png");
+        addIconToButton(resetTransactionsButton, "/icons/refresh.png");
 
         eCoins.setText(blockchainService.getWalletBalance());
 
@@ -130,15 +137,24 @@ public class MainWindowController {
 
         blockView.setOnMousePressed(event -> {
             if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
+                log.info("selected: {}", blockView.getSelectionModel().getSelectedItem().toReadableString());
                 Block block = blockView.getSelectionModel().getSelectedItem();
                 transactionsForBlockId = block.getLedgerId();
-                updateData();
-                transactionTableHeader.setText(transactionTabLabel);
                 switchToTab(1);
+                updateData();
             }
         });
 
         updateData();
+
+        RefreshService refreshService = new RefreshService();
+        refreshService.setPeriod(Duration.seconds(REFRESH_SECONDS));
+
+        refreshService.setOnSucceeded(event -> {
+            log.info("refreshing");
+            updateData();
+        });
+        refreshService.start();
     }
 
     private void switchToTab(int i) {
@@ -152,12 +168,12 @@ public class MainWindowController {
             transactionTabLabel = CURRENT_BLOCK_TRANSACTION_LABEL;
         } else {
             tableview.setItems(blockchainService.getTransactionsForBlockFX(transactionsForBlockId));
-            transactionTabLabel = SPECIFIC_BLOCK_TRANSACTION_LABEL+" "+transactionsForBlockId;
+            transactionTabLabel = SPECIFIC_BLOCK_TRANSACTION_LABEL + " " + transactionsForBlockId;
         }
+        transactionTableHeader.setText(transactionTabLabel);
         blockView.setItems(blockchainService.getBlockchainFX());
         eCoins.setText(blockchainService.getWalletBalance());
     }
-
 
     @FXML
     public void toNewTransactionController() {
@@ -182,15 +198,13 @@ public class MainWindowController {
 
     @FXML
     public void refresh() {
-//        tableview.setItems(blockchainService.getTransactionLedgerFX());
-//        tableview.getSelectionModel().select(0);
-//        eCoins.setText(blockchainService.getWalletBalance());
         updateData();
     }
 
-    @Scheduled(fixedRate = 30, timeUnit = TimeUnit.SECONDS, initialDelay = 3)
-    public void refreshScheduled() {
-        refresh();
+    @FXML
+    public void onResetTransaction() {
+        transactionsForBlockId = null;
+        updateData();
     }
 
     @FXML
@@ -224,5 +238,18 @@ public class MainWindowController {
         ClipboardContent content = new ClipboardContent();
         content.putString(value);
         clipboard.setContent(content);
+    }
+
+
+    private static class RefreshService extends ScheduledService<Boolean> {
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                @Override
+                protected Boolean call() {
+                    return true;
+                }
+            };
+        }
     }
 }

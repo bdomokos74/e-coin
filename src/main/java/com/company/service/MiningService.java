@@ -13,7 +13,6 @@ import java.time.ZoneOffset;
 public class MiningService {
     private final BlockchainService blockchainService;
     public void run() {
-
         long lastMinedBlock = LocalDateTime.parse(blockchainService.getCurrentBlockChain().getLast().getTimeStamp()).toEpochSecond(ZoneOffset.UTC);
         if ((lastMinedBlock + BlockchainService.TIMEOUT_INTERVAL) < LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) {
             log.debug("BlockChain is too old for mining! Update it from peers");
@@ -28,5 +27,4 @@ public class MiningService {
         blockchainService.setMiningPoints(blockchainService.getMiningPoints() + 2);
 
     }
-
 }

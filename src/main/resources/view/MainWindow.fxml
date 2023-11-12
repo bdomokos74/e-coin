@@ -78,7 +78,8 @@
             </left>
             <right>
                 <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-                    <Button layoutX="113.0" layoutY="20.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#refresh" prefHeight="30.0" prefWidth="67.0" text="Refresh" textAlignment="CENTER" />
+                    <Button layoutX="119.0" layoutY="24.0" mnemonicParsing="false" nodeOrientation="LEFT_TO_RIGHT" onAction="#refresh" prefHeight="30.0" prefWidth="67.0" text="Refresh" textAlignment="CENTER" />
+               <Button fx:id="resetTransactionsButton" layoutX="75.0" layoutY="26.0" mnemonicParsing="false" onAction="#onResetTransaction" prefHeight="25.0" prefWidth="25.0" />
                 </AnchorPane>
             </right>
         </BorderPane>
