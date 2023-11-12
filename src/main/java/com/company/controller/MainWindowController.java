@@ -97,6 +97,7 @@ public class MainWindowController {
     private byte[] publicKeyBytes;
     private Long transactionsForBlockId = null;
     private String transactionTabLabel = CURRENT_BLOCK_TRANSACTION_LABEL;
+    private final RefreshService refreshService = new RefreshService();
 
     public void initialize() {
 
@@ -149,7 +150,6 @@ public class MainWindowController {
 
         RefreshService refreshService = new RefreshService();
         refreshService.setPeriod(Duration.seconds(REFRESH_SECONDS));
-
         refreshService.setOnSucceeded(event -> {
             log.info("refreshing");
             updateData();
