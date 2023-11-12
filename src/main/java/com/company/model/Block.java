@@ -113,4 +113,29 @@ public class Block implements Serializable {
         transaction.setLedgerId(this.ledgerId);
         transactionLedger.add(transaction);
     }
+
+    public String getPrevHashFX() {
+        return DigestUtils.md5DigestAsHex(this.prevHash);
+    }
+    public String getCurrHashFX() {
+        return DigestUtils.md5DigestAsHex(this.currHash);
+    }
+    public String getCreatedByFX() {
+        return DigestUtils.md5DigestAsHex(this.minedBy);
+    }
+
+    public String getMiningPointsFX() {
+        return miningPoints.toString();
+    }
+
+    public String getLuckFX() {
+        return luck.toString();
+    }
+    public String getCreatedOnFx() {
+        return this.timeStamp;
+    }
+
+    public String getTransactionNumFX() {
+        return this.transactionLedger.size()+"";
+    }
 }

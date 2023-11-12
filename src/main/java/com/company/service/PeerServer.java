@@ -58,9 +58,9 @@ public class PeerServer {
         ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream());
         LinkedList<Block> recievedBC = (LinkedList<Block>) objectInput.readObject();
         log.info("received: LedgerId = " + recievedBC.getLast().getLedgerId() + " Size= " + recievedBC.getLast().getTransactionLedger().size());
-        log.debug("received lastblock: {}", recievedBC.getLast());
+        log.debug("received lastblock: {}", recievedBC.getLast().toReadableString());
         LinkedList<Block> consensus = blockchainService.getBlockchainConsensus(recievedBC);
-        log.debug("sending consensus, lastblock: {}", consensus.getLast());
+        log.debug("sending consensus, lastblock: {}", consensus.getLast().toReadableString());
         objectOutput.writeObject(consensus);
     }
 }

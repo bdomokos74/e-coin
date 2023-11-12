@@ -20,7 +20,7 @@ public class UI extends Application {
     public void start(Stage stage) {
         Parent root;
         try {
-            URL resource = getClass().getResource("/View/MainWindow.fxml");
+            URL resource = getClass().getResource("/view/MainWindow.fxml");
             FXMLLoader fxmlLoader = new FXMLLoader(resource);
             fxmlLoader.setControllerFactory(applicationContext::getBean);
             root = fxmlLoader.load();

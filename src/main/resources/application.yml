@@ -17,9 +17,9 @@ spring:
 #  jpa:
 #    show-sql: true
 
-#logging:
-#  level:
-#    com.company: debug
+logging:
+  level:
+    com.company: debug
 
 ---
 

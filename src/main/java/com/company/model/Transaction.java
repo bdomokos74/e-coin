@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.util.DigestUtils;
 
 import java.io.Serializable;
 import java.security.*;
@@ -110,16 +111,19 @@ public class Transaction implements Serializable {
    }
 
    public String getFromFX() {
-      Base64.Encoder encoder = Base64.getEncoder();
-      return encoder.encodeToString(from);
+//      Base64.Encoder encoder = Base64.getEncoder();
+//      return encoder.encodeToString(from);
+      return DigestUtils.md5DigestAsHex(from);
    }
 
    public String getToFX() {
-      Base64.Encoder encoder = Base64.getEncoder();
-      return encoder.encodeToString(to);
+//      Base64.Encoder encoder = Base64.getEncoder();
+//      return encoder.encodeToString(to);
+      return DigestUtils.md5DigestAsHex(to);
    }
    public String getSignatureFX() {
-      Base64.Encoder encoder = Base64.getEncoder();
-      return encoder.encodeToString(this.signature) ;
+//      Base64.Encoder encoder = Base64.getEncoder();
+//      return encoder.encodeToString(this.signature) ;
+      return DigestUtils.md5DigestAsHex(this.signature);
    }
 }

@@ -23,7 +23,7 @@ public class MiningService {
         } else {
             log.info("MINING started");
             blockchainService.mineBlock();
-            log.info(blockchainService.getWalletBallanceFX());
+            log.info(blockchainService.getWalletBalance());
         }
         blockchainService.setMiningPoints(blockchainService.getMiningPoints() + 2);
 

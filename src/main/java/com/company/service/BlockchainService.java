@@ -38,7 +38,7 @@ public class BlockchainService {
     private Block latestBlock;
     private boolean exit = false;
     private int miningPoints;
-    public static final int TIMEOUT_INTERVAL = 65;
+    public static final int TIMEOUT_INTERVAL = 600;// orig:65;
     public static final int MINING_INTERVAL = 60;
 
     Comparator<Transaction> transactionComparator = Comparator.comparing(Transaction::getTimestamp);
@@ -49,8 +49,16 @@ public class BlockchainService {
         newBlockTransactionsFX.addAll(newBlockTransactions);
         return FXCollections.observableArrayList(newBlockTransactionsFX);
     }
+    public ObservableList<Transaction> getTransactionsForBlockFX(long i) {
+        newBlockTransactionsFX.clear();
+        newBlockTransactionsFX.addAll(currentBlockChain.stream().filter(block -> block.getLedgerId() == i).findAny().get().getTransactionLedger());
+        return FXCollections.observableArrayList(newBlockTransactionsFX);
+    }
 
-    public String getWalletBallanceFX() {
+    public ObservableList<Block> getBlockchainFX() {
+        return FXCollections.observableArrayList(currentBlockChain);
+    }
+    public String getWalletBalance() {
         Wallet wallet = walletService.loadWallet();
         return getBalance(currentBlockChain, newBlockTransactions, getPublicKey(wallet)).toString();
     }

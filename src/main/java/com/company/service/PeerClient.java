@@ -57,7 +57,7 @@ public class PeerClient {
                 log.info("\tRETURNED BC LedgerId = " + returnedBlockchain.getLast().getLedgerId() + " Size= " + returnedBlockchain.getLast().getTransactionLedger().size());
             }
             LinkedList<Block> consensus = blockchainService.getBlockchainConsensus(returnedBlockchain);
-            log.debug("\tconsensus: {}", consensus.getLast());
+            log.debug("\tconsensus: {}", consensus.getLast().toReadableString());
 
 //            Thread.sleep(CLIENT_SLEEP_MILLIS);
 
