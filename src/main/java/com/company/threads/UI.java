@@ -5,19 +5,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.net.URL;
 
+@RequiredArgsConstructor
 public class UI extends Application {
     private final String name;
     private final ApplicationContext applicationContext;
-
-    public UI(String name, ApplicationContext applicationContext) {
-        this.name = name;
-        this.applicationContext = applicationContext;
-    }
 
     @Override
     public void start(Stage stage) {

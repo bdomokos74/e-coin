@@ -10,13 +10,10 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -24,26 +21,27 @@ import java.util.List;
 public class Main implements ApplicationListener<ECoin.StageReadyEvent> {
     private final BlockchainService blockchainService;
     private final ApplicationContext applicationContext;
+    private final PeerServer peerServer;
+    private final PeerClient peerClient;
 
     public static void main(String[] args) {
         Application.launch(ECoin.class, args);
     }
 
+    @Value("${name}")
+    private String name;
+
     @Override
     public void onApplicationEvent(ECoin.StageReadyEvent event) {
-        log.info("onApplicationEvent");
+        log.info("onApplicationEvent: {}", name);
         blockchainService.startBlockChain();
 
         Stage stage = event.getStage();
-        List<Integer> peerPorts = Arrays.stream(System.getenv("peer.port").split(",")).map(Integer::parseInt).toList();
-        int serverPort = Integer.parseInt(System.getenv("server.port"));
-        new UI(System.getenv("name"), applicationContext).start(stage);
-        new PeerClient(peerPorts, blockchainService).start();
-        try {
-            new PeerServer(serverPort, blockchainService).start();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        new UI(name, applicationContext).start(stage);
+
+        peerClient.startThread();
+        peerServer.serve();
+
         new MiningThread(blockchainService).start();
     }
 

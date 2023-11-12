@@ -25,7 +25,7 @@ public class MiningThread extends Thread {
                 long miningInSec = ((lastMinedBlock + BlockchainService.MINING_INTERVAL) - LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
                 //log.info("BlockChain is current, mining will commence in " + ((lastMinedBlock + BlockchainService.MINING_INTERVAL) - LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)) + " seconds");
             } else {
-                log.info("MINING NEW BLOCK");
+                log.info("MINING ");
                 blockchainService.mineBlock();
                 log.info(blockchainService.getWalletBallanceFX());
             }

@@ -27,6 +27,7 @@ class BlockChainRepositoryTest {
         Block block = new Block();
         block.setCurrHash("currHash".getBytes());
         block.setPrevHash("prevHash".getBytes());
+        block.setLedgerId(1L);
 
         blockChainRepository.save(block);
         entityManager.flush();

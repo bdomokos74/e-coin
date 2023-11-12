@@ -11,9 +11,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Controller;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -25,7 +27,8 @@ import static com.company.util.KeyHelper.getPublicKey;
 public class MainWindowController {
     private final WalletService walletService;
     private final BlockchainService blockchainService;
-    
+    private final ApplicationContext applicationContext;
+
     @FXML
     public TableView<Transaction> tableview = new TableView<>(); //this is read-only UI table
     @FXML
@@ -62,8 +65,10 @@ public class MainWindowController {
     public void toNewTransactionController() {
         Dialog<ButtonType> newTransactionController = new Dialog<>();
         newTransactionController.initOwner(borderPane.getScene().getWindow());
-        FXMLLoader fxmlLoader = new FXMLLoader();
-        fxmlLoader.setLocation(getClass().getResource("/View/AddNewTransactionWindow.fxml"));
+        URL resource = getClass().getResource("/View/AddNewTransactionWindow.fxml");
+        FXMLLoader fxmlLoader = new FXMLLoader(resource);
+        fxmlLoader.setControllerFactory(applicationContext::getBean);
+//        fxmlLoader.setLocation(resource);
         try {
             newTransactionController.getDialogPane().setContent(fxmlLoader.load());
         } catch (IOException e) {

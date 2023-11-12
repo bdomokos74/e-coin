@@ -52,13 +52,13 @@ public class WalletService {
             );
 
             String sr = result.toString();
+//            log.info("signing: {}", sr);
             Signature signing = Signature.getInstance("SHA256withDSA");
             signing.initSign(getPrivateKey(fromWallet));
             signing.update(sr.getBytes());
             result.setSignature(signing.sign());
             return result;
-        } catch (
-                NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }
