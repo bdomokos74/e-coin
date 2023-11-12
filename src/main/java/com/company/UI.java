@@ -1,4 +1,4 @@
-package com.company.threads;
+package com.company;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

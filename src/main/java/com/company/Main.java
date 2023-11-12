@@ -2,9 +2,8 @@ package com.company;
 
 
 import com.company.service.BlockchainService;
-import com.company.threads.PeerClient;
-import com.company.threads.PeerServer;
-import com.company.threads.UI;
+import com.company.service.PeerClient;
+import com.company.service.PeerServer;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,6 @@ public class Main implements ApplicationListener<ECoin.StageReadyEvent> {
     private final BlockchainService blockchainService;
     private final ApplicationContext applicationContext;
     private final PeerServer peerServer;
-    private final PeerClient peerClient;
 
     public static void main(String[] args) {
         Application.launch(ECoin.class, args);

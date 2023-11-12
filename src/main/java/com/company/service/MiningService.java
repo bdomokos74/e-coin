@@ -1,6 +1,5 @@
-package com.company.threads;
+package com.company.service;
 
-import com.company.service.BlockchainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

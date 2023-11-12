@@ -1,9 +1,7 @@
-package com.company.threads;
+package com.company.service;
 
 
 import com.company.model.Block;
-import com.company.service.BlockchainService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

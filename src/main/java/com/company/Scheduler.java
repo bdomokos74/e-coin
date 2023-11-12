@@ -1,5 +1,7 @@
-package com.company.threads;
+package com.company;
 
+import com.company.service.MiningService;
+import com.company.service.PeerClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

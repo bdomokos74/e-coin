@@ -1,7 +1,6 @@
-package com.company.threads;
+package com.company.service;
 
 import com.company.model.Block;
-import com.company.service.BlockchainService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
