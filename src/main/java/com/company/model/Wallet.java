@@ -8,6 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Getter
 @Setter
+@Table(name = "WALLET", schema = "ecoin")
 public class Wallet {
     @Id
     private Long id;

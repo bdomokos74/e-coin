@@ -1,0 +1,23 @@
+version: '3.7'
+volumes:
+  db-data:
+    driver: local
+
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./sql/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 15432:5432
+    networks:
+      - postgres-network
+
+networks:
+  postgres-network:
+    driver: bridge

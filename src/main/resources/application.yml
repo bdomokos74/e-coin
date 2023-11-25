@@ -13,7 +13,9 @@ spring:
     activate:
       on-profile: default
   datasource:
-    url: jdbc:h2:file:${DB_PATH}
+    url: ${DB_URL}
+    username: postgres
+    password: postgres
 #  jpa:
 #    show-sql: true
 

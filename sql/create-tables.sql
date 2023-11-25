@@ -1,36 +1,39 @@
+drop table if exists WALLET;
 CREATE TABLE IF NOT EXISTS WALLET
 (
     ID          INTEGER NOT NULL,
-    PRIVATE_KEY BLOB(2k)    NOT NULL,
-    PUBLIC_KEY  BLOB(2k)    NOT NULL,
+    PRIVATE_KEY BYTEA    NOT NULL,
+    PUBLIC_KEY  BYTEA    NOT NULL,
     PRIMARY KEY (ID)
 );
 
+drop sequence if exists SEQ_BLOCKCHAIN;
 create sequence SEQ_BLOCKCHAIN start with 1 increment by 1;
 
---drop table BLOCKCHAIN;
+drop table if exists BLOCKCHAIN;
 CREATE TABLE IF NOT EXISTS BLOCKCHAIN
 (
     LEDGER_ID     INTEGER NOT NULL UNIQUE,
-    PREVIOUS_HASH BLOB(2k)    NOT NULL,
-    CURRENT_HASH  BLOB(2k)    , -- need to save to get ID. TODO: fix this
+    PREVIOUS_HASH BYTEA    NOT NULL,
+    CURRENT_HASH  BYTEA    , -- need to save to get ID. TODO: fix this
     CREATED_ON    TEXT,
-    CREATED_BY    BLOB(2k),
+    CREATED_BY    BYTEA,
     MINING_POINTS TEXT,
     LUCK          NUMERIC,
     PRIMARY KEY (LEDGER_ID)
 );
 
---drop table TRANSACTIONS;
+drop table if EXISTS TRANSACTIONS;
 CREATE TABLE IF NOT EXISTS TRANSACTIONS
 (
-    ID         VARCHAR2(36) NOT NULL,
-    FROM_W     BLOB(2k),
-    TO_W       BLOB(2k),
+    ID         VARCHAR(36) NOT NULL,
+    FROM_W     BYTEA,
+    TO_W       BYTEA,
     LEDGER_ID  INTEGER,
     VALUE_V    INTEGER,
-    SIGNATURE  BLOB    NOT NULL,
+    SIGNATURE  BYTEA    NOT NULL,
     CREATED_ON TEXT,
     PRIMARY KEY (ID)
 );
 
+commit;

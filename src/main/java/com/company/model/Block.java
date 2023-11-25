@@ -12,7 +12,7 @@ import java.util.*;
 import static com.company.util.KeyHelper.getPublicKey;
 
 @Entity
-@Table(name = "BLOCKCHAIN")
+@Table(name = "BLOCKCHAIN", schema = "ecoin")
 @Builder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Getter

@@ -7,15 +7,17 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.util.DigestUtils;
 
 import java.io.Serializable;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
+import java.security.InvalidKeyException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.UUID;
 
 import static com.company.util.KeyHelper.getPublicKey;
 
 @Entity
-@Table(name = "TRANSACTIONS")
+@Table(name = "TRANSACTIONS", schema = "ecoin")
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
