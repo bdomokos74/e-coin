@@ -24,7 +24,7 @@ class WalletServiceTest {
     private WalletService walletService;
 
     @Test
-    void name() {
+    void testLoadWallet() {
         Wallet w = walletService.getOrCreateWallet();
         entityManager.flush();
 
